@@ -571,3 +571,119 @@ policy. Tracking item.
    verifier endpoint, run it and flip `verified` to `true` in
    `deployments/0g-testnet.json`. (Could be a scheduled background agent —
    `/schedule` an agent to retry monthly.)
+
+---
+
+## Phase 5 — Mesh v0 (planner/executor/critic on a 0G Log bus)
+
+### What shipped
+
+- **`@sovereignclaw/mesh`** package with four surfaces:
+  - `Bus` — append-only event log wrapping any `MemoryProvider`. Writes
+    JSON envelopes under zero-padded `evt:…` keys (16-char seqs) so
+    `provider.list('evt:')` replays in correct order after a sort.
+  - `Mesh` — `Bus` + agent registry (`register(agent, alias?)`), bus
+    listener fan-out, and close semantics that cleanly tear down the
+    underlying provider.
+  - `planExecuteCritique({ planner, executors, critic, task, ... })` —
+    the default orchestration pattern. Emits typed events
+    (`task.created`, `plan.created`, `execution.started`,
+    `execution.complete`, `critique.created`, `plan.revise`,
+    `task.complete`) with `parentSeq` linkage and a robust critic-JSON
+    parser that tolerates code fences and surrounding prose.
+  - Typed errors: `MeshError`, `BusAppendError`, `BusReplayError`,
+    `PatternError`, `EmptyAgentOutputError`, `MaxRoundsExceededError`,
+    `CritiqueParseError`, `MeshClosedError`.
+
+- **30 unit tests** across three suites (seq, bus, pattern), all green.
+  Patterns tested with fake `InferenceAdapter`s — zero network calls.
+
+- **Live integration suite** (`INTEGRATION=1`,
+  `packages/mesh/test/integration/mesh-3-agent.test.ts`) that runs the
+  pattern against real 0G Galileo. Opt-in to preserve CI speed.
+
+- **`examples/research-mesh/`** — the Phase 5 DoD demo. Three real agents
+  (planner/executor/critic) backed by `sealed0GInference` run
+  `planExecuteCritique` over an encrypted bus on 0G Log. Prints every
+  event's 0G root hash and a `storagescan-galileo.0g.ai/tx/<root>` link
+  so reviewers can verify end-to-end.
+
+### Measured end-to-end on real testnet
+
+Command:
+
+```bash
+pnpm --filter @sovereignclaw/example-research-mesh dev
+```
+
+Result (single round, accept-first-pass):
+
+- `rounds=1 score=1.000 acceptedExecutor=executor`
+- Wall time: **~120s** (dominated by 3 inference calls + 6 storage writes).
+- **6 bus events** persisted on 0G Log, monotonic `seq=0..5`:
+  `task.created → plan.created → execution.started → execution.complete → critique.created → task.complete`.
+- Each event has a 0G root hash; on-chain storage submit tx hashes (`0x22E03a…` Flow contract):
+  `0x55e4704f…` (seq 0), `0xa76fd82f…` (1), `0x059eea7f…` (2),
+  `0xa839b949…` (3), `0xc15917a7…` (4), `0x8f322570…` (5).
+- Final output: the Transformer paper with all 8 authors and venue
+  (NeurIPS) — i.e. the critic scored it 1.0, threshold was 0.7, and it
+  accepted on round 1.
+
+Encryption: the bus is wrapped by `encrypted(OG_Log(...))` with a
+KEK derived from `signer.signMessage(...)`, so **every byte on 0G
+Log is ciphertext**; only the owning wallet can decrypt the event
+stream. Sovereignty preserved by construction.
+
+### Design choices & deferrals
+
+- **Single-writer Mesh v0.** The roadmap §8.1 calls for `(seq, writerAddr)`
+  tiebreak rules. We deliberately did not build that yet. v0 has one
+  writer (the orchestrator process), so a plain monotonic counter is
+  correct and shipped code is simple. The envelope is shaped so adding
+  `writerAddr` and (local_clock, counter) is a non-breaking change.
+- **Cross-process replay is 5.1, not 5.0.** `OG_Log`'s v0 index is
+  process-local (Phase 1 carryover #2). `Bus.replay()` works fine within
+  a single process; true cold-start replay of a bus written by a crashed
+  orchestrator needs a new `MemoryProvider.listFromRoot()` API or direct
+  indexer pagination. Ship path is clear; not on the Phase 5 critical
+  path for the DoD claim.
+- **Only `planExecuteCritique` in v0.** `debate` and `hierarchical`
+  patterns from §8.2 are deferred. The pattern API takes agent instances
+  as parameters, so both will slot in without core changes.
+- **Backpressure is in-memory.** §8.4 proposes Redis/BullMQ. v0 runs
+  agents sequentially inside `planExecuteCritique` (parallel only across
+  executors in a single round). `maxConcurrentRuns` enforcement remains
+  deferred from Phase 1 for the same reason.
+- **Critic JSON parser is generous on purpose.** Open-model critics
+  routinely wrap JSON in prose or code fences. The parser tries strict,
+  then stripped-fence, then first `{...}` block; throws
+  `CritiqueParseError` only if all three fail. Prompts still ask for
+  one-line JSON (§CRITIC_INSTRUCTION) so strict mode is the normal path.
+
+### Flake notes
+
+- Same 0G-SDK storage-upload revert we documented in Phase 4 can surface
+  here too (transient fee mismatch across indexer nodes). First run this
+  phase succeeded on attempt 1 — mesh writes are small (JSON envelopes
+  in the 1 KB range) so they generally fit any node's fee policy. If it
+  flakes, re-run the example; same advice as `docs/quickstart.md`.
+
+### Carryover from Phase 5 → Phase 6 (reflection)
+
+1. **Surface the tx hash on writes.** Bus events currently expose only
+   the 0G root hash (`pointer`). The SDK also returns `txHash` on upload
+   — passing it through `MemoryProvider.set()` (non-breaking: optional
+   second field on the return) would give patterns first-class on-chain
+   references and cleaner explorer links than `storagescan-galileo/tx/<root>`.
+2. **Cross-process bus replay.** Gate Phase 5.1; implement either a new
+   `MemoryProvider.listFromRoot(meshRoot)` API or a purpose-built
+   `Bus.hydrate({ fromIndexer })` that walks the 0G indexer directly.
+   Unlocks orchestrator restart recovery (§8.3 replay test).
+3. **Checkpoint events.** §8.3 specifies writing a checkpoint every 50
+   events or 30s. Add a `Bus.checkpoint()` method that emits a
+   `bus.checkpoint` event whose payload is `{ fromSeq, toSeq, summary }`.
+   Cheap, lets replay start from the last checkpoint instead of seq 0.
+4. **Pattern reflection hook.** Phase 6's reflection module should
+   consume bus events to mine lessons. Suggest a pattern-level
+   `onComplete?(result, events)` callback so reflection can run without
+   the pattern reaching into 0G itself.

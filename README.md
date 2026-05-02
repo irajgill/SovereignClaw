@@ -2,10 +2,12 @@
 
 Sovereign-memory, multi-agent, iNFT-native agent framework for 0G.
 
-> **Status:** Phase 4 — ResearchClaw example + quickstart docs shipped. A
-> reviewer who has never seen the repo can clone → mint a sovereign iNFT in
-> ~85 seconds of wall time. See [docs/quickstart.md](docs/quickstart.md) for
-> the paste-able path, [docs/dev-log.md](docs/dev-log.md) for build progress.
+> **Status:** Phase 5 — Mesh v0 shipped. Three-agent
+> (planner/executor/critic) flow runs end-to-end on real 0G Galileo testnet
+> with every bus event encrypted and persisted on 0G Log. See
+> [`examples/research-mesh`](examples/research-mesh/), then
+> [docs/quickstart.md](docs/quickstart.md) for the ResearchClaw quickstart
+> and [docs/dev-log.md](docs/dev-log.md) for build progress.
 
 ## Deployed addresses (0G Galileo Testnet, chainId `16602`)
 
@@ -39,6 +41,8 @@ asserts the live `AgentNFT.oracle()` matches your local oracle key.
 | [`examples/agent-mint-transfer-revoke`](examples/agent-mint-transfer-revoke/) (Phase 3) | DoD example: full lifecycle on real testnet                           |
 | [`examples/research-claw`](examples/research-claw/) (Phase 4)                           | DoD example: sovereign agent + TEE inference + encrypted mint, ~80 LoC |
 | [`docs/quickstart.md`](docs/quickstart.md) + `pnpm benchmark:cold-start` (Phase 4)      | Clone-to-iNFT paste path, reproducible ~85s cold-start benchmark      |
+| [`@sovereignclaw/mesh`](packages/mesh/) (Phase 5)                                       | Bus over 0G Log, `planExecuteCritique`, typed events, 30 unit tests   |
+| [`examples/research-mesh`](examples/research-mesh/) (Phase 5)                           | DoD example: planner + executor + critic, 6 encrypted bus events on-log |
 
 ## Quickstart — clone → sovereign iNFT on 0G Galileo in <90 seconds
 
@@ -66,6 +70,16 @@ cd examples/research-claw && pnpm dev
 For the full **mint → transfer → revoke** lifecycle (Phase 3, requires the
 dev oracle and a second wallet), see
 [`examples/agent-mint-transfer-revoke`](examples/agent-mint-transfer-revoke/).
+
+For the **3-agent mesh** flow (Phase 5), once the core + memory + mesh
+packages are built:
+
+```bash
+pnpm --filter @sovereignclaw/core --filter @sovereignclaw/memory --filter @sovereignclaw/mesh build
+cd examples/research-mesh && pnpm dev
+# Prints 6 bus events with their 0G root hashes + storagescan URLs, then
+# the accepted final answer, score, and round count.
+```
 
 Reproduce the DX numbers on your own machine:
 

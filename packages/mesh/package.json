@@ -1,0 +1,45 @@
+{
+  "name": "@sovereignclaw/mesh",
+  "version": "0.0.0",
+  "description": "Multi-agent coordination for SovereignClaw — bus on 0G Log, patterns, replay.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "INTEGRATION=1 vitest run --config vitest.integration.config.ts",
+    "lint": "eslint src test",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@sovereignclaw/core": "workspace:*",
+    "@sovereignclaw/memory": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "22.7.5",
+    "dotenv": "16.4.5",
+    "ethers": "6.13.4",
+    "tsup": "8.3.0",
+    "typescript": "5.6.3",
+    "vitest": "2.1.2"
+  },
+  "peerDependencies": {
+    "ethers": "^6.13.4"
+  }
+}
