@@ -427,6 +427,128 @@ sources remain at [deployments/flattened/](../deployments/flattened/).
 `pnpm verify:contracts` script is in place and will work without
 modification when 0G ships an API.
 
+---
+
+## Phase 4 — ResearchClaw + quickstart docs (May 2026)
+
+### What shipped
+
+- [examples/research-claw/](../examples/research-claw/) — Phase 4 DoD
+  example. Composes `@sovereignclaw/core` + `@sovereignclaw/memory` +
+  `@sovereignclaw/inft` into a sovereign, encrypted, iNFT-minted research
+  agent. ~100 LoC of agent wiring. Runs against real 0G Galileo testnet
+  end-to-end in ~80 s. Reflection is deferred to Phase 6 per the roadmap.
+- [docs/quickstart.md](./quickstart.md) — clone → funded wallet → iNFT in a
+  paste-able path. Documents both the wallet and Router two-balance model
+  (Phase 0 risk #21 / Phase 3 carryover #1) and the pinned-SDK storage
+  flake rate (Phase 3 carryover). Includes a measured cold-start table.
+- [scripts/benchmark-cold-start.ts](../scripts/benchmark-cold-start.ts) and
+  `pnpm benchmark:cold-start` — reproducible step-by-step timing report,
+  supports `--clean` (true cold) and `--skip-run` (CI smoke). Writes
+  `scripts/.benchmarks/cold-start.json` for PR deltas (Phase 8 will wire
+  these into CI).
+- Root [README.md](../README.md) updated: status bumped to Phase 4, the
+  ResearchClaw quickstart replaces the Phase 3 lifecycle block above the
+  fold, benchmark commands referenced. Phase 3 material remains one click
+  away under `examples/agent-mint-transfer-revoke/`.
+
+### Measured cold-start (Phase 4 DoD run)
+
+Linux x64 workstation, Node 23.3, warm lockfile, forge libs already
+present in `contracts/lib/`:
+
+| Step                | Wall time  | Notes                                               |
+| ------------------- | ---------- | --------------------------------------------------- |
+| `pnpm install`      | 0.9 s      | no network fetches, lockfile matched                |
+| `forge install`     | skipped    | `contracts/lib/forge-std` + OZ already present      |
+| `forge build`       | 0.1 s      | incremental                                         |
+| `pkg-build`         | 3.7 s      | core + memory + inft in parallel                    |
+| `research-claw-run` | 79.7 s     | 3 storage writes + 1 TEE inference + 1 mint tx      |
+| **Total**           | **84.3 s** | full JSON report at `scripts/.benchmarks/cold-start.json` |
+
+Wall time from a true first-clone (wipe `node_modules` and
+`contracts/lib/`) adds roughly 10 s for npm fetches and 15 s for the two
+`forge install` calls — clone-to-mint is still comfortably under 2 min,
+with the roadmap §16 target of <10 min.
+
+### End-to-end artifacts
+
+Two clean verification runs against 0G Galileo:
+
+| Run                     | Token  | Mint tx                                                                                                                                              |
+| ----------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ResearchClaw v1 (first) | #11    | [`0x76e7c8b5…91a56717`](https://chainscan-galileo.0g.ai/tx/0x76e7c8b5aba483cd6f42c505cc8c6911659e0a50522d7f8e6309e90091a56717)                        |
+| Cold-start benchmark    | #12    | [`0x3d72b59f…5750e37`](https://chainscan-galileo.0g.ai/tx/0x3d72b59fd1ea13920b0e59c71a22227a27bc88de631720de8bcf67b8d5750e37)                         |
+
+Each run also wrote three AES-256-GCM ciphertexts to 0G Storage Log via
+the indexer, produced TEE-verified inference via the Router (provider
+`0xa48f01287233509FD694a22Bf840225062E67836`, `tee_verified: true`), and
+committed a metadata hash over `(role, pointer, owner, royaltyBps)` that
+an off-chain indexer can recompute.
+
+### Design refinements made during implementation
+
+1. **Reflection stays in Phase 6.** The roadmap §12.1 ResearchClaw spec
+   includes a `reflect: reflectOnOutput(...)` block; Phase 6 DoD says
+   "ResearchClaw updated to use reflection". Phase 4 ships without it so
+   we don't couple the quickstart to an un-built package. The
+   manifest-pointer pattern (see below) is reflection-ready — Phase 6 will
+   fold learnings into the same manifest.
+
+2. **Explicit manifest pointer, not agent's internal context.** `Agent.run`
+   writes a `context` key to memory internally; its pointer isn't exposed
+   on the public API. ResearchClaw writes its own `manifest` key after the
+   run completes and mints against that pointer. The commit is:
+   `computeMetadataHash({ role, pointer, owner, royaltyBps })`. Clean
+   separation between agent runtime state and iNFT-committed manifest.
+
+3. **Cold-start benchmark is skip-aware.** `forge install` is skipped when
+   `contracts/lib/*` already exist (common case after the first run). The
+   benchmark reports the skip explicitly in its summary and JSON so CI
+   can't confuse a warm run for a cold one.
+
+4. **Foundry libs are `forge install --no-git`.** Same reason as the
+   Phase 3 lockfile commit: the SovereignClaw repo has no `.gitmodules`
+   and we don't want `forge install` adding one implicitly. The quickstart
+   mirrors this flag. A future improvement is to add an `install-all.sh`
+   wrapper in `scripts/` that handles both pnpm and forge in one call.
+
+5. **Research-claw pnpm script wires typecheck.** `pnpm --filter
+   @sovereignclaw/example-research-claw typecheck` fails fast if the
+   example drifts from the public API shapes of core/memory/inft, which
+   catches breaking changes before anyone hits a runtime 1G Storage tx.
+
+### Honest flake note (carryover from Phase 3, unchanged in Phase 4)
+
+Across the Phase 4 verification session, the `@0gfoundation/0g-ts-sdk@1.2.1`
+indexer-node selection revert-rate on small storage writes was observed
+at roughly **1 run in 3**. A second `pnpm dev` consistently hit a
+different node and succeeded. This matches the Phase 3 observation and is
+surfaced in both `docs/quickstart.md` and
+`examples/research-claw/README.md`. No code change in Phase 4 — a Phase 6
+or Phase 8 follow-up is to add a retry/backoff inside
+`@sovereignclaw/memory`'s `OG_Log.set`, ideally with a fee-escalation
+policy. Tracking item.
+
+### Carryover from Phase 4 → Phase 5 (Mesh)
+
+1. **Agent flush pattern is memory-only today.** `Agent.flush()` iterates
+   attached providers and calls `.flush()`. When Mesh introduces a bus on
+   `OG_Log`, the bus provider should participate in the same flush
+   contract — either as a direct `MemoryProvider` injected into the Agent
+   or as a separately-flushed handle on the `Mesh` instance.
+
+2. **Manifest schema is v1.** ResearchClaw writes `{ v: 1, role, namespace,
+   mintedAt, lastRun: {...} }`. Phase 5 mesh events and Phase 6 reflection
+   learnings should extend rather than replace this schema so off-chain
+   indexers built against Phase 4 iNFTs continue working.
+
+3. **Benchmark harness is ready for more DX metrics.** The
+   `scripts/benchmark-cold-start.ts` pattern (sequential steps → JSON
+   report) is reusable. Phase 5–8 will drop in peers:
+   `benchmark-mesh-throughput`, `benchmark-revoke-latency`,
+   `benchmark-inference-rtt`, `benchmark-loc` (per roadmap §14.6).
+
 ### Carryover from Phase 3 → Phase 4 (ResearchClaw + quickstart)
 
 1. **Quickstart docs must walk users through the _three_-balance reality**:

@@ -2,8 +2,10 @@
 
 Sovereign-memory, multi-agent, iNFT-native agent framework for 0G.
 
-> **Status:** Phase 3 — dev oracle and iNFT lifecycle live on 0G Galileo
-> testnet. See [docs/dev-log.md](docs/dev-log.md) for build progress.
+> **Status:** Phase 4 — ResearchClaw example + quickstart docs shipped. A
+> reviewer who has never seen the repo can clone → mint a sovereign iNFT in
+> ~85 seconds of wall time. See [docs/quickstart.md](docs/quickstart.md) for
+> the paste-able path, [docs/dev-log.md](docs/dev-log.md) for build progress.
 
 ## Deployed addresses (0G Galileo Testnet, chainId `16602`)
 
@@ -35,33 +37,41 @@ asserts the live `AgentNFT.oracle()` matches your local oracle key.
 | [`@sovereignclaw/inft`](packages/inft/) (Phase 3)                                       | Mint / transfer-with-reencryption / revoke / recordUsage helpers      |
 | [`@sovereignclaw/backend` dev oracle](apps/backend/) (Phase 3)                          | Hono service signing EIP-712 oracle proofs                            |
 | [`examples/agent-mint-transfer-revoke`](examples/agent-mint-transfer-revoke/) (Phase 3) | DoD example: full lifecycle on real testnet                           |
+| [`examples/research-claw`](examples/research-claw/) (Phase 4)                           | DoD example: sovereign agent + TEE inference + encrypted mint, ~80 LoC |
+| [`docs/quickstart.md`](docs/quickstart.md) + `pnpm benchmark:cold-start` (Phase 4)      | Clone-to-iNFT paste path, reproducible ~85s cold-start benchmark      |
 
-## Quickstart — see all three lifecycle txs on chainscan in <10 min
+## Quickstart — clone → sovereign iNFT on 0G Galileo in <90 seconds
+
+The full paste-able quickstart lives in
+[docs/quickstart.md](docs/quickstart.md). The short form:
 
 ```bash
-git clone <repo> && cd sovereignclaw
+git clone https://github.com/irajgill/SovereignClaw.git
+cd SovereignClaw
+cp .env.example .env
+# Fill PRIVATE_KEY (funded wallet from https://faucet.0g.ai) and
+# COMPUTE_ROUTER_API_KEY (from https://pc.testnet.0g.ai).
+
 pnpm install
+( cd contracts && forge install foundry-rs/forge-std --no-git \
+                       && forge install OpenZeppelin/openzeppelin-contracts --no-git \
+                       && forge build )
+pnpm --filter @sovereignclaw/core --filter @sovereignclaw/memory --filter @sovereignclaw/inft build
 
-# 1. Generate a dev-oracle keypair and put it in .env
-pnpm gen:oracle-key
-# Copy ORACLE_PRIVATE_KEY and ORACLE_ADDRESS into .env (gitignored).
-# Also set PRIVATE_KEY (Alice) and BOB_PRIVATE_KEY (Bob) — both funded testnet
-# wallets from https://faucet.0g.ai (0.1 0G/day each is plenty).
+cd examples/research-claw && pnpm dev
+# Prints TEE-verified inference, three encrypted 0G writes, and a chainscan
+# URL for your freshly-minted ResearchClaw iNFT.
+```
 
-# 2. Rotate the on-chain AgentNFT.oracle to your dev-oracle address
-ORACLE_NEW_ADDRESS=$(grep '^ORACLE_ADDRESS=' .env | cut -d= -f2) pnpm rotate:oracle
-pnpm check:deployment   # asserts the rotation took
+For the full **mint → transfer → revoke** lifecycle (Phase 3, requires the
+dev oracle and a second wallet), see
+[`examples/agent-mint-transfer-revoke`](examples/agent-mint-transfer-revoke/).
 
-# 3. Build the workspace packages
-pnpm --filter @sovereignclaw/memory --filter @sovereignclaw/inft build
+Reproduce the DX numbers on your own machine:
 
-# 4. Start the dev oracle (separate terminal)
-pnpm --filter @sovereignclaw/backend dev
-# Or: docker compose -f apps/backend/docker-compose.yml --env-file .env up --build
-
-# 5. Run the example end-to-end
-cd examples/agent-mint-transfer-revoke && pnpm dev
-# Prints three chainscan-galileo URLs: mint, transfer, revoke
+```bash
+pnpm benchmark:cold-start          # wall-time each step, writes JSON report
+pnpm benchmark:cold-start --clean  # true cold: wipes node_modules first
 ```
 
 ## Phase 3 highlights
