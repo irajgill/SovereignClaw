@@ -2,12 +2,14 @@
 
 Sovereign-memory, multi-agent, iNFT-native agent framework for 0G.
 
-> **Status:** Phase 5 — Mesh v0 shipped. Three-agent
-> (planner/executor/critic) flow runs end-to-end on real 0G Galileo testnet
-> with every bus event encrypted and persisted on 0G Log. See
+> **Status:** Phase 6 — Reflection v0 shipped. ResearchClaw now runs a
+> self-critique after every inference, persists a queryable `learning:<runId>`
+> record on 0G Log, and auto-injects recent learnings into future context.
+> Three-agent mesh (Phase 5) still runs end-to-end. See
+> [`examples/research-claw`](examples/research-claw/) and
 > [`examples/research-mesh`](examples/research-mesh/), then
-> [docs/quickstart.md](docs/quickstart.md) for the ResearchClaw quickstart
-> and [docs/dev-log.md](docs/dev-log.md) for build progress.
+> [docs/quickstart.md](docs/quickstart.md) for the paste-able path and
+> [docs/dev-log.md](docs/dev-log.md) for build progress.
 
 ## Deployed addresses (0G Galileo Testnet, chainId `16602`)
 
@@ -43,6 +45,8 @@ asserts the live `AgentNFT.oracle()` matches your local oracle key.
 | [`docs/quickstart.md`](docs/quickstart.md) + `pnpm benchmark:cold-start` (Phase 4)      | Clone-to-iNFT paste path, reproducible ~85s cold-start benchmark      |
 | [`@sovereignclaw/mesh`](packages/mesh/) (Phase 5)                                       | Bus over 0G Log, `planExecuteCritique`, typed events, 30 unit tests   |
 | [`examples/research-mesh`](examples/research-mesh/) (Phase 5)                           | DoD example: planner + executor + critic, 6 encrypted bus events on-log |
+| [`@sovereignclaw/reflection`](packages/reflection/) (Phase 6)                           | `reflectOnOutput()`, 4 built-in rubrics, learnings persistence, 35 unit tests |
+| `reflect: reflectOnOutput({...})` in ResearchClaw (Phase 6)                             | Self-critique on every run; `learning:<runId>` queryable via `listRecentLearnings` |
 
 ## Quickstart — clone → sovereign iNFT on 0G Galileo in <90 seconds
 
@@ -60,10 +64,12 @@ pnpm install
 ( cd contracts && forge install foundry-rs/forge-std --no-git \
                        && forge install OpenZeppelin/openzeppelin-contracts --no-git \
                        && forge build )
-pnpm --filter @sovereignclaw/core --filter @sovereignclaw/memory --filter @sovereignclaw/inft build
+pnpm --filter @sovereignclaw/core --filter @sovereignclaw/memory \
+     --filter @sovereignclaw/reflection --filter @sovereignclaw/inft build
 
 cd examples/research-claw && pnpm dev
-# Prints TEE-verified inference, three encrypted 0G writes, and a chainscan
+# Prints TEE-verified inference, a self-critique (reflect.complete with
+# score + learningPointer), four encrypted 0G writes, and a chainscan
 # URL for your freshly-minted ResearchClaw iNFT.
 ```
 

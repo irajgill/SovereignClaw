@@ -9,6 +9,7 @@ import type { MemoryProvider } from '@sovereignclaw/memory';
 import { CoreError } from './errors.js';
 import { TypedEventEmitter, type AgentEventHandler, type AgentEventName } from './events.js';
 import type { ChatMessage, InferenceAdapter, InferenceResult } from './inference.js';
+import type { ReflectionConfig, ReflectionLearning } from './reflection.js';
 import type { Tool } from './tools.js';
 
 export interface AgentConfig {
@@ -21,6 +22,14 @@ export interface AgentConfig {
   maxTokens?: number;
   temperature?: number;
   historyContextLimit?: number;
+  /**
+   * Optional reflection config. If set, `Agent.run()` runs the reflection
+   * sub-loop after inference (§7.2 step 7) and prepends recent learnings
+   * to the message history before calling inference (§10.2 step 9).
+   */
+  reflect?: ReflectionConfig;
+  /** Max recent learnings to prepend to context when reflect is configured. Default 3. */
+  learningsContextLimit?: number;
   beforeRun?: (ctx: BeforeRunContext) => Promise<void> | void;
   afterRun?: (ctx: AfterRunContext) => Promise<void> | void;
   onError?: (ctx: OnErrorContext) => Promise<void> | void;
@@ -45,8 +54,11 @@ export interface OnErrorContext {
 }
 
 const DEFAULT_HISTORY_LIMIT = 10;
+const DEFAULT_LEARNINGS_LIMIT = 3;
 const CONTEXT_KEY = 'context';
 const HISTORY_PREFIX = 'run:';
+/** Shared prefix for learning entries written by @sovereignclaw/reflection. */
+export const LEARNING_PREFIX = 'learning:';
 
 interface PersistedContext {
   recentMessages: ChatMessage[];
@@ -61,6 +73,70 @@ interface HistoryEntry {
   model?: string;
   teeVerified?: boolean | null;
   totalCostWei?: string;
+}
+
+interface LearningRecord {
+  version: number;
+  runId: string;
+  inputText: string;
+  initialOutputText?: string;
+  finalOutputText: string;
+  score: number;
+  reasoning?: string;
+  suggestion?: string;
+  rounds: number;
+  accepted: boolean;
+  timestamp: number;
+}
+
+function parseLearning(bytes: Uint8Array): LearningRecord | null {
+  try {
+    const parsed = JSON.parse(new TextDecoder().decode(bytes)) as LearningRecord;
+    if (!parsed || typeof parsed.runId !== 'string' || typeof parsed.finalOutputText !== 'string') {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function formatLearningsAsSystemMessage(records: LearningRecord[]): string {
+  const lines = records.map((r, i) => {
+    const scored = Number.isFinite(r.score) ? r.score.toFixed(2) : 'n/a';
+    const reason = r.reasoning?.trim();
+    const reasonBlock = reason ? ` — reason: ${reason}` : '';
+    return `  ${i + 1}. (score ${scored}, runId=${r.runId}) ${r.finalOutputText.slice(0, 400)}${reasonBlock}`;
+  });
+  return [
+    'Prior reflected learnings (most recent first, provided as additional context):',
+    ...lines,
+    'Use these as precedent when they are relevant; otherwise ignore them.',
+  ].join('\n');
+}
+
+/**
+ * Helper: read up to `limit` most-recent learning records from a history
+ * provider. Exported so callers that want to query learnings outside of a
+ * run (e.g. dashboards, CLIs, `pnpm check:learnings`) can reuse the shape.
+ */
+export async function listRecentLearnings(
+  history: MemoryProvider,
+  limit = DEFAULT_LEARNINGS_LIMIT,
+): Promise<LearningRecord[]> {
+  const keys: string[] = [];
+  for await (const entry of history.list(LEARNING_PREFIX)) {
+    keys.push(entry.key);
+  }
+  const records: LearningRecord[] = [];
+  for (const key of keys) {
+    const bytes = await history.get(key);
+    if (!bytes) continue;
+    const parsed = parseLearning(bytes);
+    if (parsed) records.push(parsed);
+  }
+  records.sort((a, b) => b.timestamp - a.timestamp);
+  return records.slice(0, limit);
 }
 
 export class AgentClosedError extends CoreError {
@@ -118,6 +194,24 @@ export class Agent {
         }
       }
 
+      // §10.2 step 9: when reflect is configured, include recent learnings
+      // in context so the agent can benefit from prior self-critique. v0
+      // ranks by recency; top-k by embedding similarity is Phase 6.1.
+      if (this.cfg.reflect && this.cfg.history) {
+        const limit = this.cfg.learningsContextLimit ?? DEFAULT_LEARNINGS_LIMIT;
+        try {
+          const learnings = await listRecentLearnings(this.cfg.history, limit);
+          if (learnings.length > 0) {
+            messages.push({
+              role: 'system',
+              content: formatLearningsAsSystemMessage(learnings),
+            });
+          }
+        } catch {
+          // Never fail a run because learnings loading hiccuped. Next run gets another shot.
+        }
+      }
+
       if (typeof input === 'string') {
         messages.push({ role: 'user', content: input });
       } else {
@@ -128,10 +222,28 @@ export class Agent {
         await this.cfg.beforeRun({ runId, input, messages });
       }
 
-      const output = await this.cfg.inference.run(messages, {
+      const initialOutput = await this.cfg.inference.run(messages, {
         maxTokens: options?.maxTokens ?? this.cfg.maxTokens,
         temperature: options?.temperature ?? this.cfg.temperature,
       });
+
+      let output = initialOutput;
+      let persistedLearning: ReflectionLearning | undefined;
+      if (this.cfg.reflect) {
+        this.emitter.emit('reflect.start', { input, initialOutput, runId });
+        const reflected = await this.cfg.reflect.run({
+          runId,
+          input,
+          messages,
+          initialOutput,
+          inference: this.cfg.inference,
+          history: this.cfg.history,
+        });
+        output = reflected.finalOutput;
+        persistedLearning = reflected.learning;
+        this.emitter.emit('reflect.complete', { input, result: reflected, runId });
+      }
+      void persistedLearning;
 
       if (this.cfg.afterRun) {
         await this.cfg.afterRun({ runId, input, output });

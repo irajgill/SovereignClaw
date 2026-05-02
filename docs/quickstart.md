@@ -68,6 +68,7 @@ which `@sovereignclaw/inft` imports for its ABI bindings.
 ```bash
 pnpm --filter @sovereignclaw/core \
      --filter @sovereignclaw/memory \
+     --filter @sovereignclaw/reflection \
      --filter @sovereignclaw/inft build
 ```
 

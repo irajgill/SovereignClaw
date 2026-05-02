@@ -17,6 +17,7 @@
     "@sovereignclaw/core": "workspace:*",
     "@sovereignclaw/inft": "workspace:*",
     "@sovereignclaw/memory": "workspace:*",
+    "@sovereignclaw/reflection": "workspace:*",
     "dotenv": "16.4.5",
     "ethers": "6.13.4"
   },

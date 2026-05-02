@@ -14,6 +14,8 @@ export const VERSION = '0.0.0';
 export {
   Agent,
   AgentClosedError,
+  LEARNING_PREFIX,
+  listRecentLearnings,
   type AgentConfig,
   type BeforeRunContext,
   type AfterRunContext,
@@ -21,6 +23,14 @@ export {
 } from './agent.js';
 
 export { type AgentEvents, type AgentEventName, type AgentEventHandler } from './events.js';
+
+export {
+  type ReflectionConfig,
+  type ReflectionContext,
+  type ReflectionResult,
+  type ReflectionRoundDetail,
+  type ReflectionLearning,
+} from './reflection.js';
 
 export {
   sealed0GInference,

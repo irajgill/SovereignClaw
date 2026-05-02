@@ -1,21 +1,24 @@
 /**
- * ResearchClaw — Phase 4 Definition-of-Done example.
+ * ResearchClaw — Phase 4 + Phase 6 Definition-of-Done example.
  *
- * Composes every Phase 1–3 primitive against real 0G Galileo testnet in
- * under 100 lines of agent wiring:
+ * Composes every Phase 1–3 + Phase 6 primitive against real 0G Galileo
+ * testnet in under ~120 lines of agent wiring:
  *
  *   1. Wallet-derived KEK for a dedicated namespace (AES-256-GCM + HKDF).
  *   2. Encrypted OG_Log memory for `context`, encrypted OG_Log history
- *      for append-only run logs. Every byte on 0G is ciphertext.
+ *      for append-only run logs AND reflection learnings. Every byte on
+ *      0G is ciphertext.
  *   3. Agent (@sovereignclaw/core) with a researcher system prompt and the
  *      Router-backed `sealed0GInference` adapter (verify_tee=true).
- *   4. Runs the agent on an academic research question. Prints the TEE
- *      attestation, provider address, latency, and per-call billing.
- *   5. Writes an agent manifest to memory, captures its 0G root hash,
+ *   4. `reflectOnOutput({ rubric: 'accuracy', rounds: 1 })` runs a
+ *      self-critique after inference and persists a learning:<runId>
+ *      record to history. Subsequent runs auto-load recent learnings
+ *      into context.
+ *   5. Runs the agent on an academic research question. Prints TEE
+ *      attestation, reflection score/rounds, and per-call billing.
+ *   6. Writes an agent manifest to memory, captures its 0G root hash,
  *      and mints an ERC-7857 iNFT via `@sovereignclaw/inft`. Prints the
  *      chainscan-galileo URL.
- *
- * Reflection is deferred to Phase 6; see docs/dev-log.md Phase 6 DoD.
  *
  * Prereqs:
  *   - `.env` at repo root with PRIVATE_KEY, RPC_URL, INDEXER_URL,
@@ -23,7 +26,8 @@
  *   - PRIVATE_KEY wallet funded on 0G Galileo (https://faucet.0g.ai).
  *   - Router account funded for the chosen model
  *     (https://pc.testnet.0g.ai).
- *   - `pnpm --filter @sovereignclaw/memory --filter @sovereignclaw/inft build`
+ *   - `pnpm --filter @sovereignclaw/core --filter @sovereignclaw/memory
+ *     --filter @sovereignclaw/reflection --filter @sovereignclaw/inft build`
  *     has been run at least once so workspace deps resolve.
  */
 import { config as loadDotenv } from 'dotenv';
@@ -47,8 +51,9 @@ import { fileURLToPath } from 'node:url';
 }
 
 import { JsonRpcProvider, Wallet, randomBytes } from 'ethers';
-import { Agent, sealed0GInference } from '@sovereignclaw/core';
+import { Agent, listRecentLearnings, sealed0GInference } from '@sovereignclaw/core';
 import { OG_Log, deriveKekFromSigner, encrypted } from '@sovereignclaw/memory';
+import { reflectOnOutput } from '@sovereignclaw/reflection';
 import { loadDeployment, mintAgentNFT, type MintableAgent } from '@sovereignclaw/inft';
 
 const KEK_NAMESPACE = process.env.KEK_NAMESPACE ?? 'research-claw-v1';
@@ -109,6 +114,13 @@ async function main(): Promise<void> {
     }),
     memory,
     history,
+    reflect: reflectOnOutput({
+      rounds: 1,
+      critic: 'self',
+      rubric: 'accuracy',
+      persistLearnings: true,
+      threshold: 0.7,
+    }),
   });
 
   research.on('run.start', ({ runId }) => log('run.start', { runId }));
@@ -119,6 +131,16 @@ async function main(): Promise<void> {
       teeVerified: output.attestation.teeVerified,
       providerAddress: output.attestation.providerAddress,
       totalCostWei: output.billing.totalCost.toString(),
+    }),
+  );
+  research.on('reflect.start', ({ runId }) => log('reflect.start', { runId }));
+  research.on('reflect.complete', ({ runId, result }) =>
+    log('reflect.complete', {
+      runId,
+      accepted: result.accepted,
+      rounds: result.rounds,
+      score: Number(result.score.toFixed(3)),
+      learningPointer: result.learning?.pointer ?? null,
     }),
   );
 
@@ -172,9 +194,24 @@ async function main(): Promise<void> {
     encryptedPointer: minted.encryptedPointer,
   });
 
+  // Query learnings that this run (or prior runs) wrote to the history
+  // namespace. Confirms the Phase 6 DoD claim: "learning is queryable".
+  const learnings = await listRecentLearnings(history, 5);
+  log('learnings.recent', {
+    count: learnings.length,
+    entries: learnings.map((r) => ({
+      runId: r.runId,
+      score: Number(r.score.toFixed(3)),
+      accepted: r.accepted,
+      rounds: r.rounds,
+      preview: r.finalOutputText.slice(0, 120),
+    })),
+  });
+
   await research.close();
   log('done', {
-    summary: 'ResearchClaw ran, persisted encrypted memory on 0G, and minted the agent as an iNFT.',
+    summary:
+      'ResearchClaw ran with reflection, persisted encrypted memory + learnings on 0G, and minted the agent as an iNFT.',
     explorerUrl: minted.explorerUrl,
     tokenId: minted.tokenId.toString(),
   });

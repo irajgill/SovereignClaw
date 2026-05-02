@@ -6,6 +6,7 @@
  */
 import { EventEmitter } from 'node:events';
 import type { ChatMessage, InferenceResult } from './inference.js';
+import type { ReflectionResult } from './reflection.js';
 
 export interface AgentEvents {
   'run.start': { input: string | ChatMessage[]; runId: string };
@@ -13,6 +14,12 @@ export interface AgentEvents {
   'run.error': { error: unknown; runId: string };
   'tool.call': { tool: string; args: unknown; runId: string };
   'tool.result': { tool: string; args: unknown; result: unknown; runId: string };
+  'reflect.start': { input: string | ChatMessage[]; initialOutput: InferenceResult; runId: string };
+  'reflect.complete': {
+    input: string | ChatMessage[];
+    result: ReflectionResult;
+    runId: string;
+  };
 }
 
 export type AgentEventName = keyof AgentEvents;
