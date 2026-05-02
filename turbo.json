@@ -20,7 +20,7 @@
     },
     "lint": {
       "outputs": [],
-      "inputs": ["src/**", "test/**"]
+      "inputs": ["src/**", "test/**", "eslint.config.js", "package.json"]
     },
     "typecheck": {
       "dependsOn": ["^build"],
