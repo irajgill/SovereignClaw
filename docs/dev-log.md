@@ -141,3 +141,169 @@ Phase 1 deferred (each defensible per §19.15, picked up in named later phases):
 - Reflection module → Phase 6
 - onChainTx and fileGen tools → Phase 9 (IncomeClaw)
 
+### Carryover from Phase 1 → Phase 2
+
+1. **Storage SDK ethers v5 type incompatibility** — `@0gfoundation/0g-ts-sdk@1.2.1`
+   ships ethers v5 types but runs against v6 fine. The `signer as any` cast is
+   in `packages/memory/src/og-log.ts` at the indexer.upload boundary. Phase 2
+   contracts work in pure Foundry/Solidity so this won't bite there, but the
+   pattern is now a known constant of the build.
+
+2. **Process-local index in OG_Log** — Phase 1 ships with the index built
+   only from this process's own writes (cold start = empty index). Documented
+   in `og-log.ts` module docstring. Phase 5 mesh will need cross-process
+   recovery; that's the trigger for the manifest-pointer pattern from §6.6.
+
+3. **AgentNFT contract storage layout** — when Phase 2 implements §5.1, the
+   `encryptedPointer` field stores a 0G root hash (32 bytes, hex-encoded),
+   matching the `Pointer` type in `@sovereignclaw/memory`. Phase 1 already
+   produces these — no schema mismatch to negotiate.
+
+4. **Two-balance funding model** — Phase 1 examples and integration tests
+   surface this in their READMEs. Phase 4 quickstart docs (§13 Phase 4 DoD)
+   must walk users through faucet→wallet AND wallet→Router deposit. Don't
+   leave it for them to debug a 402.
+
+5. **`@sovereignclaw/inft` package will depend on `@sovereignclaw/memory`**
+   for the Pointer type. Add `"@sovereignclaw/memory": "workspace:*"` to its
+   package.json from the start. (`@sovereignclaw/core` does not depend on
+   inft and shouldn't — keep the layering clean.)
+---
+
+## Phase 2 — Smart contracts (May 2026)
+
+### What shipped
+
+- [contracts/src/interfaces/IAgentNFT.sol](../contracts/src/interfaces/IAgentNFT.sol),
+  [IMemoryRevocation.sol](../contracts/src/interfaces/IMemoryRevocation.sol),
+  [IOracle.sol](../contracts/src/interfaces/IOracle.sol) — interface freeze
+  with full NatSpec, custom-error vocabulary, and the locked EIP-712 typehash.
+- [contracts/src/MemoryRevocation.sol](../contracts/src/MemoryRevocation.sol) —
+  immutable-bound revocation registry. Only the bound AgentNFT may write.
+- [contracts/src/AgentNFT.sol](../contracts/src/AgentNFT.sol) — ERC-7857-style
+  iNFT. Inherits `ERC721`, `Ownable2Step`, `ReentrancyGuard`. Standard
+  ERC-721 transfer/approve paths disabled. EIP-712 typed-data oracle proofs
+  with per-token monotonic nonces.
+- [contracts/script/Deploy.s.sol](../contracts/script/Deploy.s.sol) — predicts
+  the AgentNFT address with `vm.computeCreateAddress` so MemoryRevocation can
+  bind to it immutably in one broadcast.
+- 75 Foundry tests across 5 suites, 0 failing. Invariant suite ran 256 × 500
+  calls per property = 128k randomized handler invocations each, 0 reverts.
+- Gas snapshot committed at [contracts/.gas-snapshot](../contracts/.gas-snapshot).
+- Live deploy on 0G Galileo testnet (chainId 16602). Both contract bytecode
+  reachable; `pnpm check:deployment` passes 9/9 wiring assertions.
+
+### Deployed addresses
+
+| Contract | Address | Tx |
+|---|---|---|
+| MemoryRevocation | `0x735084C861E64923576D04d678bA2f89f6fbb6AC` | `0x4015e1a585c1e2aa83fcfff1d9a1106aec1baa6c5fccec817e849eefcc81278d` |
+| AgentNFT | `0xc3f997545da4AA8E70C82Aab82ECB48722740601` | `0x51627bc78152b4cb546b62521972d92dd875ff25a7ff7aef04d8d7c0af62b51b` |
+
+Deployer/initial-oracle: `0x236E59315dD2Fc05704915a6a1a7ba4791cc3b5B`. The
+oracle is set to the deployer as a Phase-2 placeholder and will be rotated
+in Phase 3 via `setOracle` once the dev-oracle service generates its keypair.
+
+Total deploy cost: ~0.014 0G testnet (gas estimate from the broadcast log).
+
+### Design refinements made during implementation
+
+1. **`MemoryRevocation.revoke` signature dropped its own ECDSA check.**
+   Roadmap §5.2 listed `revoke(tokenId, oldKeyHash, signature)` with the
+   registry verifying the owner sig. Moved into AgentNFT.revoke instead;
+   registry now only accepts calls from its bound AgentNFT (immutable). This
+   is strictly stronger: the sig is verified once by the contract that knows
+   the current owner, and the registry can't be poisoned by anyone with a
+   stale signature. Roadmap §5.2 note pending.
+
+2. **EIP-712 typed-data signing instead of raw eth_sign.** The roadmap §5.1
+   said "verifies oracleProof was signed by oracle over (tokenId, msg.sender,
+   to, newPointer)." Extended to a full EIP-712 domain (`SovereignClaw AgentNFT`
+   v1 on chainId 16602, `verifyingContract = address(AgentNFT)`). Three wins:
+   wallets show structured data instead of opaque hex; the domain separator
+   pins signatures to this specific deploy; standard tooling (ethers
+   `signTypedData`) means the Phase-3 oracle is trivial.
+
+3. **`OracleProof` is a typed struct in the interface.** Wire format is still
+   `bytes calldata oracleProof = abi.encode(OracleProof)` but the named struct
+   gives Foundry tests clean ergonomics and Phase 3 a typechain-friendly type.
+
+4. **Action discriminator (`OracleAction.Transfer | Revoke`) prevents
+   action-confusion replay.** Without it a transfer proof could in principle
+   be replayed as a revoke if the rest of the fields aligned. Cheap insurance.
+
+5. **Per-token monotonic `tokenNonce`.** Each successful transfer or revoke
+   bumps `tokenNonce[tokenId]` by 1, and the oracle proof must carry the
+   exact current value. No replay possible.
+
+6. **`tokenURI` returns a deterministic url-encoded `data:` URI** carrying
+   only the metadata hash. No hosted JSON, no IPFS dependency, no oracle
+   lookup. Off-chain indexers can join the hash with whatever 0G Storage
+   blob the agent's owner publishes.
+
+7. **Re-entrancy test was reframed.** `_transfer` (the path
+   `transferWithReencryption` uses post-mint) does not call
+   `onERC721Received`, so the original "attacker re-enters during transfer"
+   scenario is structurally impossible. The test now mints into a malicious
+   receiver — which forces `onERC721Received` to fire — and asserts that the
+   receiver's attempted re-entry into `transferWithReencryption` cannot
+   poison the outer mint. This still proves the `nonReentrant` guard wiring
+   is correct without giving false-positive coverage of an attack vector
+   that doesn't exist on `_transfer`.
+
+### Source verification — the documented fallback
+
+`forge verify-contract --verifier blockscout` against
+`https://chainscan-galileo.0g.ai/api` does not work today. The host is a
+client-rendered React SPA that returns the same 3.3 KB shell at every path,
+including `/api`, `/api/v2`, `/api/v2/smart-contracts`, `/api?module=...`,
+and several other Etherscan/Blockscout patterns probed during this phase.
+Sourcify does not support chainId 16602 ("Chain 16602 is not a Sourcify
+chain!"). docs.0g.ai's `deploy-contracts` doc page 404'd at the time of
+deploy.
+
+Per the §19.2 working agreement, the result must be "a clickable green
+checkmark on chainscan." The path forward:
+
+1. Flattened single-file source committed to
+   [deployments/flattened/AgentNFT.flat.sol](../deployments/flattened/AgentNFT.flat.sol)
+   (4097 lines) and
+   [deployments/flattened/MemoryRevocation.flat.sol](../deployments/flattened/MemoryRevocation.flat.sol)
+   (167 lines).
+2. Manual upload via the chainscan-galileo UI when the explorer's
+   verification page becomes navigable (currently the SPA route does not
+   render a usable form — likely a 0G-side issue, not a contract issue).
+3. Constructor-args ABI encoding documented in
+   [deployments/0g-testnet.json](../deployments/0g-testnet.json) and
+   [contracts/README.md](../contracts/README.md).
+4. The `pnpm verify:contracts` script remains in place; it will work
+   without modification when 0G ships a Blockscout/Etherscan-compatible
+   endpoint.
+
+This is the same kind of "endpoint shape pending" status that Phase 1 lived
+with for the Router `tee_verified` field. Documented, not papered over.
+
+### Carryover from Phase 2 → Phase 3
+
+1. **Oracle rotation.** AgentNFT's oracle is currently the deployer wallet.
+   First action of the Phase 3 dev-oracle service: generate its long-lived
+   secp256k1 keypair, publish its address, and call
+   `AgentNFT.setOracle(devOracleAddr)` from the deployer. Update
+   `deployments/0g-testnet.json` `oracle` field.
+2. **`@sovereignclaw/inft` ABI loader.** Should read directly from
+   `contracts/out/AgentNFT.sol/AgentNFT.json` and
+   `contracts/out/MemoryRevocation.sol/MemoryRevocation.json` rather than
+   hand-maintaining ABIs. The deploy record in
+   `deployments/0g-testnet.json` is the source of truth for addresses.
+3. **Oracle EIP-712 signing reference.** The exact typehash and domain hashes
+   the off-chain signer must use are in
+   [contracts/src/interfaces/IOracle.sol](../contracts/src/interfaces/IOracle.sol)
+   under `OracleProofTypeHashes`. Phase 3 must mirror these byte-for-byte.
+4. **Test harness reuse.** [contracts/test/helpers/OracleSigner.sol](../contracts/test/helpers/OracleSigner.sol)
+   already encodes the exact EIP-712 digest the on-chain `_verifyOracleProof`
+   reconstructs — useful as a reference for the TS oracle signer. The
+   structure to mirror is in `OracleSigner.digest()`.
+5. **Gas-snapshot CI gate.** `pnpm contracts:snapshot:check` is wired into
+   `package.json`; CI integration job in `.github/workflows/ci.yml` runs it
+   alongside `forge test`. Adding new tests will require running
+   `pnpm contracts:snapshot` and committing the updated snapshot.
