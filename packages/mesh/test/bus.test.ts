@@ -71,9 +71,9 @@ describe('Bus', () => {
     const provider = InMemory({ namespace: 'n' });
     await provider.close();
     const bus = new Bus({ meshId: 'm', provider });
-    await expect(
-      bus.append({ type: 'x', fromAgent: 'a', payload: {} }),
-    ).rejects.toBeInstanceOf(BusAppendError);
+    await expect(bus.append({ type: 'x', fromAgent: 'a', payload: {} })).rejects.toBeInstanceOf(
+      BusAppendError,
+    );
   });
 
   it('replay returns events in seq order even if inserted out of natural order', async () => {

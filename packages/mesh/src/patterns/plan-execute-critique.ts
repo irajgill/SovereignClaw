@@ -27,11 +27,7 @@ import {
   type TaskCompletePayload,
   type TaskCreatedPayload,
 } from '../types.js';
-import {
-  CritiqueParseError,
-  EmptyAgentOutputError,
-  MaxRoundsExceededError,
-} from '../errors.js';
+import { CritiqueParseError, EmptyAgentOutputError, MaxRoundsExceededError } from '../errors.js';
 
 export interface PlanExecuteCritiqueOptions {
   mesh: Mesh;
@@ -136,7 +132,12 @@ export async function planExecuteCritique(
           },
         });
         track(doneEvt.pointer, doneEvt.key);
-        return { executor: executor.role, output: out.text.trim(), round, doneSeq: doneEvt.event.seq };
+        return {
+          executor: executor.role,
+          output: out.text.trim(),
+          round,
+          doneSeq: doneEvt.event.seq,
+        };
       }),
     );
 

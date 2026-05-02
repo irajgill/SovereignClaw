@@ -4,7 +4,9 @@ import { CritiqueParseError } from '../src/errors.js';
 
 describe('parseCritique', () => {
   it('parses strict single-line JSON', () => {
-    const r = parseCritique('{"score": 0.8, "suggestion": "tighten it", "reasoning": "ok but long"}');
+    const r = parseCritique(
+      '{"score": 0.8, "suggestion": "tighten it", "reasoning": "ok but long"}',
+    );
     expect(r.score).toBeCloseTo(0.8, 2);
     expect(r.suggestion).toBe('tighten it');
     expect(r.reasoning).toBe('ok but long');

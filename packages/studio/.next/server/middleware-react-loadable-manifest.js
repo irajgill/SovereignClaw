@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST="{\"components/CodePreview.tsx -> @monaco-editor/react\":{\"id\":\"components/CodePreview.tsx -> @monaco-editor/react\",\"files\":[\"static/chunks/_app-pages-browser_node_modules_pnpm_monaco-editor_react_4_6_0_monaco-editor_0_55_1_react-dom-d5ca6a.js\"]}}"

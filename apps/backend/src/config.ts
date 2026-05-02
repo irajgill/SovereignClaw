@@ -37,6 +37,27 @@ const ConfigSchema = z.object({
   ORACLE_AUTH_TOKEN: z.string().optional(),
   /** Path to deployments/0g-testnet.json. Defaults to repo root. */
   DEPLOYMENT_PATH: z.string().optional(),
+  /** 0G RPC URL used by Studio deploy pipeline for manifest writes + minting. */
+  RPC_URL: z.string().url().optional(),
+  /** 0G Storage indexer for manifest writes. */
+  INDEXER_URL: z.string().url().optional(),
+  /** 0G storage explorer base for manifest links (e.g. https://storagescan-galileo.0g.ai). */
+  STORAGE_EXPLORER_URL: z.string().url().optional(),
+  /**
+   * Funded wallet used to mint iNFTs on behalf of Studio deploys.
+   * If unset, /studio/deploy returns 503.
+   * Falls back to PRIVATE_KEY so the existing .env keeps working in v0.
+   */
+  STUDIO_MINTER_PRIVATE_KEY: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{64}$/, 'STUDIO_MINTER_PRIVATE_KEY must be 0x + 64 hex chars')
+    .optional(),
+  PRIVATE_KEY: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{64}$/, 'PRIVATE_KEY must be 0x + 64 hex chars')
+    .optional(),
+  /** CSV of origins allowed to hit /studio/*; defaults to http://localhost:3030. */
+  STUDIO_CORS_ORIGINS: z.string().optional(),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 });
 

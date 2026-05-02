@@ -31,91 +31,83 @@ describeMaybe('Mesh 3-agent (integration, real testnet)', () => {
     }
   });
 
-  it(
-    'plans, executes, and critiques a small factual task end-to-end',
-    async () => {
-      const provider = new ethers.JsonRpcProvider(RPC_URL!);
-      const signer = new ethers.Wallet(PRIVATE_KEY!, provider);
-      const meshId = `mesh-int-${Date.now().toString(36)}`;
+  it('plans, executes, and critiques a small factual task end-to-end', async () => {
+    const provider = new ethers.JsonRpcProvider(RPC_URL!);
+    const signer = new ethers.Wallet(PRIVATE_KEY!, provider);
+    const meshId = `mesh-int-${Date.now().toString(36)}`;
 
-      const kek = await deriveKekFromSigner(signer, `${meshId}-bus`);
-      const busProvider = encrypted(
-        OG_Log({
-          namespace: `${meshId}-bus`,
-          rpcUrl: RPC_URL!,
-          indexerUrl: INDEXER_URL!,
-          signer,
-        }),
-        { kek },
-      );
-      const mesh = new Mesh({ meshId, provider: busProvider });
+    const kek = await deriveKekFromSigner(signer, `${meshId}-bus`);
+    const busProvider = encrypted(
+      OG_Log({
+        namespace: `${meshId}-bus`,
+        rpcUrl: RPC_URL!,
+        indexerUrl: INDEXER_URL!,
+        signer,
+      }),
+      { kek },
+    );
+    const mesh = new Mesh({ meshId, provider: busProvider });
 
-      const mk = () =>
-        sealed0GInference({
-          model: MODEL,
-          apiKey: ROUTER_KEY!,
-          baseUrl: ROUTER_URL!,
-          verifiable: true,
-        });
-
-      const planner = new Agent({
-        role: 'planner',
-        systemPrompt:
-          'You decompose questions into short, numbered plans. Do not answer; only plan.',
-        inference: mk(),
-      });
-      const executor = new Agent({
-        role: 'executor',
-        systemPrompt:
-          'You are a careful researcher. Follow the plan step-by-step and produce a concise factual answer.',
-        inference: mk(),
-      });
-      const critic = new Agent({
-        role: 'critic',
-        systemPrompt:
-          'You are a strict reviewer. Output a single JSON object on one line only.',
-        inference: mk(),
+    const mk = () =>
+      sealed0GInference({
+        model: MODEL,
+        apiKey: ROUTER_KEY!,
+        baseUrl: ROUTER_URL!,
+        verifiable: true,
       });
 
-      try {
-        mesh.register(planner).register(executor).register(critic);
+    const planner = new Agent({
+      role: 'planner',
+      systemPrompt: 'You decompose questions into short, numbered plans. Do not answer; only plan.',
+      inference: mk(),
+    });
+    const executor = new Agent({
+      role: 'executor',
+      systemPrompt:
+        'You are a careful researcher. Follow the plan step-by-step and produce a concise factual answer.',
+      inference: mk(),
+    });
+    const critic = new Agent({
+      role: 'critic',
+      systemPrompt: 'You are a strict reviewer. Output a single JSON object on one line only.',
+      inference: mk(),
+    });
 
-        const result = await planExecuteCritique({
-          mesh,
-          planner,
-          executors: [executor],
-          critic,
-          task: 'What year was the Transformer paper "Attention Is All You Need" published, and by which lab?',
-          acceptThreshold: 0.5,
-          maxRounds: 2,
-        });
+    try {
+      mesh.register(planner).register(executor).register(critic);
 
-        expect(result.finalOutput.length).toBeGreaterThan(10);
-        expect(result.rounds).toBeGreaterThanOrEqual(1);
-        expect(result.acceptedExecutor).toBe('executor');
-        expect(result.eventPointers.length).toBeGreaterThanOrEqual(5);
-        for (const pointer of result.eventPointers) {
-          expect(pointer).toMatch(/^0x[0-9a-f]{64}$/);
-        }
+      const result = await planExecuteCritique({
+        mesh,
+        planner,
+        executors: [executor],
+        critic,
+        task: 'What year was the Transformer paper "Attention Is All You Need" published, and by which lab?',
+        acceptThreshold: 0.5,
+        maxRounds: 2,
+      });
 
-        const events = await mesh.bus.replay();
-        expect(events[0]?.type).toBe(BusEventTypes.TaskCreated);
-        expect(events[events.length - 1]?.type).toBe(BusEventTypes.TaskComplete);
-
-        // Pretty print for the reviewer — keeps CI logs human-readable.
-        console.log(`\n[mesh-int] meshId=${meshId}`);
-        console.log(`[mesh-int] finalOutput=${result.finalOutput}`);
-        console.log(`[mesh-int] score=${result.score} rounds=${result.rounds}`);
-        for (let i = 0; i < result.eventPointers.length; i += 1) {
-          console.log(
-            `[mesh-int] ${result.eventKeys[i]} root=${result.eventPointers[i]}`,
-          );
-        }
-      } finally {
-        await Promise.all([planner.close(), executor.close(), critic.close()]);
-        await mesh.close();
+      expect(result.finalOutput.length).toBeGreaterThan(10);
+      expect(result.rounds).toBeGreaterThanOrEqual(1);
+      expect(result.acceptedExecutor).toBe('executor');
+      expect(result.eventPointers.length).toBeGreaterThanOrEqual(5);
+      for (const pointer of result.eventPointers) {
+        expect(pointer).toMatch(/^0x[0-9a-f]{64}$/);
       }
-    },
-    180_000,
-  );
+
+      const events = await mesh.bus.replay();
+      expect(events[0]?.type).toBe(BusEventTypes.TaskCreated);
+      expect(events[events.length - 1]?.type).toBe(BusEventTypes.TaskComplete);
+
+      // Pretty print for the reviewer — keeps CI logs human-readable.
+      console.log(`\n[mesh-int] meshId=${meshId}`);
+      console.log(`[mesh-int] finalOutput=${result.finalOutput}`);
+      console.log(`[mesh-int] score=${result.score} rounds=${result.rounds}`);
+      for (let i = 0; i < result.eventPointers.length; i += 1) {
+        console.log(`[mesh-int] ${result.eventKeys[i]} root=${result.eventPointers[i]}`);
+      }
+    } finally {
+      await Promise.all([planner.close(), executor.close(), critic.close()]);
+      await mesh.close();
+    }
+  }, 180_000);
 });

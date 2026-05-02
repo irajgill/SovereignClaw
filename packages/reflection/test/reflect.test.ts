@@ -37,7 +37,9 @@ function scripted(callbacks: Callback[]): InferenceAdapter {
     async run(messages): Promise<InferenceResult> {
       const cb = callbacks[i];
       if (!cb) {
-        throw new Error(`fake adapter exhausted at call ${i + 1}; only ${callbacks.length} scripted`);
+        throw new Error(
+          `fake adapter exhausted at call ${i + 1}; only ${callbacks.length} scripted`,
+        );
       }
       i += 1;
       const text = await cb(messages);
@@ -50,7 +52,9 @@ function scripted(callbacks: Callback[]): InferenceAdapter {
 // only uses inline adapters. Vitest's tree-shaker is fine either way.
 void scripted;
 
-function baseContext(overrides: Partial<ReflectionContext> & { inference: InferenceAdapter }): ReflectionContext {
+function baseContext(
+  overrides: Partial<ReflectionContext> & { inference: InferenceAdapter },
+): ReflectionContext {
   return {
     runId: 'run-1',
     input: 'What year was the Transformer paper published?',
@@ -65,9 +69,7 @@ function baseContext(overrides: Partial<ReflectionContext> & { inference: Infere
 
 describe('reflectOnOutput', () => {
   it('accepts the initial output when the critic scores above threshold (round 1)', async () => {
-    const critic = scripted([
-      () => '{"score": 0.9, "suggestion": "", "reasoning": "correct"}',
-    ]);
+    const critic = scripted([() => '{"score": 0.9, "suggestion": "", "reasoning": "correct"}']);
     const cfg = reflectOnOutput({ rounds: 1, threshold: 0.7, critic, persistLearnings: false });
     const ctx = baseContext({ inference: critic, initialOutput: fakeResult('2017.') });
 
@@ -238,7 +240,12 @@ describe('reflectOnOutput', () => {
       },
     };
     const cfg = reflectOnOutput({ rounds: 2, threshold: 0.9, critic, persistLearnings: true });
-    const ctx = baseContext({ inference, history, initialOutput: fakeResult('bad'), runId: 'run-2' });
+    const ctx = baseContext({
+      inference,
+      history,
+      initialOutput: fakeResult('bad'),
+      runId: 'run-2',
+    });
     const r = await cfg.run(ctx);
     expect(r.accepted).toBe(false);
     const records = await listRecentLearnings(history, 10);

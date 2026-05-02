@@ -457,13 +457,13 @@ modification when 0G ships an API.
 Linux x64 workstation, Node 23.3, warm lockfile, forge libs already
 present in `contracts/lib/`:
 
-| Step                | Wall time  | Notes                                               |
-| ------------------- | ---------- | --------------------------------------------------- |
-| `pnpm install`      | 0.9 s      | no network fetches, lockfile matched                |
-| `forge install`     | skipped    | `contracts/lib/forge-std` + OZ already present      |
-| `forge build`       | 0.1 s      | incremental                                         |
-| `pkg-build`         | 3.7 s      | core + memory + inft in parallel                    |
-| `research-claw-run` | 79.7 s     | 3 storage writes + 1 TEE inference + 1 mint tx      |
+| Step                | Wall time  | Notes                                                     |
+| ------------------- | ---------- | --------------------------------------------------------- |
+| `pnpm install`      | 0.9 s      | no network fetches, lockfile matched                      |
+| `forge install`     | skipped    | `contracts/lib/forge-std` + OZ already present            |
+| `forge build`       | 0.1 s      | incremental                                               |
+| `pkg-build`         | 3.7 s      | core + memory + inft in parallel                          |
+| `research-claw-run` | 79.7 s     | 3 storage writes + 1 TEE inference + 1 mint tx            |
 | **Total**           | **84.3 s** | full JSON report at `scripts/.benchmarks/cold-start.json` |
 
 Wall time from a true first-clone (wipe `node_modules` and
@@ -475,10 +475,10 @@ with the roadmap §16 target of <10 min.
 
 Two clean verification runs against 0G Galileo:
 
-| Run                     | Token  | Mint tx                                                                                                                                              |
-| ----------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ResearchClaw v1 (first) | #11    | [`0x76e7c8b5…91a56717`](https://chainscan-galileo.0g.ai/tx/0x76e7c8b5aba483cd6f42c505cc8c6911659e0a50522d7f8e6309e90091a56717)                        |
-| Cold-start benchmark    | #12    | [`0x3d72b59f…5750e37`](https://chainscan-galileo.0g.ai/tx/0x3d72b59fd1ea13920b0e59c71a22227a27bc88de631720de8bcf67b8d5750e37)                         |
+| Run                     | Token | Mint tx                                                                                                                        |
+| ----------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------ |
+| ResearchClaw v1 (first) | #11   | [`0x76e7c8b5…91a56717`](https://chainscan-galileo.0g.ai/tx/0x76e7c8b5aba483cd6f42c505cc8c6911659e0a50522d7f8e6309e90091a56717) |
+| Cold-start benchmark    | #12   | [`0x3d72b59f…5750e37`](https://chainscan-galileo.0g.ai/tx/0x3d72b59fd1ea13920b0e59c71a22227a27bc88de631720de8bcf67b8d5750e37)  |
 
 Each run also wrote three AES-256-GCM ciphertexts to 0G Storage Log via
 the indexer, produced TEE-verified inference via the Router (provider
@@ -514,7 +514,7 @@ an off-chain indexer can recompute.
    wrapper in `scripts/` that handles both pnpm and forge in one call.
 
 5. **Research-claw pnpm script wires typecheck.** `pnpm --filter
-   @sovereignclaw/example-research-claw typecheck` fails fast if the
+@sovereignclaw/example-research-claw typecheck` fails fast if the
    example drifts from the public API shapes of core/memory/inft, which
    catches breaking changes before anyone hits a runtime 1G Storage tx.
 
@@ -539,7 +539,7 @@ policy. Tracking item.
    or as a separately-flushed handle on the `Mesh` instance.
 
 2. **Manifest schema is v1.** ResearchClaw writes `{ v: 1, role, namespace,
-   mintedAt, lastRun: {...} }`. Phase 5 mesh events and Phase 6 reflection
+mintedAt, lastRun: {...} }`. Phase 5 mesh events and Phase 6 reflection
    learnings should extend rather than replace this schema so off-chain
    indexers built against Phase 4 iNFTs continue working.
 
@@ -579,6 +579,7 @@ policy. Tracking item.
 ### What shipped
 
 - **`@sovereignclaw/mesh`** package with four surfaces:
+
   - `Bus` — append-only event log wrapping any `MemoryProvider`. Writes
     JSON envelopes under zero-padded `evt:…` keys (16-char seqs) so
     `provider.list('evt:')` replays in correct order after a sort.
@@ -695,11 +696,12 @@ stream. Sovereignty preserved by construction.
 ### What shipped
 
 - **`@sovereignclaw/reflection`** package with four surfaces:
+
   - `reflectOnOutput({ rounds, critic, rubric, persistLearnings, threshold })`
     returns a `ReflectionConfig` that plugs into `new Agent({ ...,
-    reflect })`. Matches the §10.1 API.
+reflect })`. Matches the §10.1 API.
   - Built-in rubrics `'accuracy' | 'completeness' | 'safety' |
-    'concision'` with dedicated guide prompts, plus a `CustomRubric`
+'concision'` with dedicated guide prompts, plus a `CustomRubric`
     callback for user-defined judgement.
   - `parseCritique()` — the same strict/fenced/prose-embedded grammar
     that the mesh critique parser uses, exported so callers can roll
@@ -708,6 +710,7 @@ stream. Sovereignty preserved by construction.
     `LearningPersistError`, `InvalidReflectionConfigError`.
 
 - **`@sovereignclaw/core` Agent integration**:
+
   - `AgentConfig.reflect?: ReflectionConfig` — structural interface
     declared in core so core does not depend on reflection.
   - `Agent.run()` step 7 (§7.2) wired: after inference, if `reflect` is
@@ -716,7 +719,7 @@ stream. Sovereignty preserved by construction.
     typed events.
   - Step 9 (§10.2) wired: when `reflect` is configured and `history` is
     attached, `Agent.run()` calls `listRecentLearnings(history,
-    learningsContextLimit ?? 3)` before inference and prepends a system
+learningsContextLimit ?? 3)` before inference and prepends a system
     message of the form "Prior reflected learnings (most recent first,
     provided as additional context): 1. ..." so future runs benefit
     from prior self-critique.
@@ -738,7 +741,7 @@ stream. Sovereignty preserved by construction.
 
 - **ResearchClaw updated** to match the §12.1 spec:
   `reflect: reflectOnOutput({ rounds: 1, critic: 'self', rubric:
-  'accuracy', persistLearnings: true, threshold: 0.7 })`. The example
+'accuracy', persistLearnings: true, threshold: 0.7 })`. The example
   now also emits `reflect.start`/`reflect.complete` event logs and,
   after the mint, calls `listRecentLearnings(history)` to prove the
   learning is queryable. The iNFT-mint flow is unchanged.
@@ -763,7 +766,7 @@ Result on the "three most cited RAG papers from 2024" prompt:
   `0x4ec0c1d57ea967d0f456b726c08c6d7909b9161e42e54a05d401fea2ec8ec99a`.
 - Learning queryable: the example calls `listRecentLearnings(history)`
   post-mint and prints `count=1 entries=[{runId, score, accepted,
-  rounds, preview}]`. DoD "learning is queryable" satisfied.
+rounds, preview}]`. DoD "learning is queryable" satisfied.
 - Manifest written (pointer
   `0x15a27871c3bc19a440007f7faf844641a20297e49ff7b3bb8646a157e1d28fef`)
   and iNFT minted (tokenId **13**, tx
@@ -824,7 +827,7 @@ with the §10.1 spec default to match the roadmap.
 1. **Reflection as a Studio node.** §11.2 already lists it. The config
    surface is small and matches `ReflectOnOutputOptions` 1:1 — ideal
    for a small form (rounds numeric, critic dropdown, rubric dropdown
-   + textarea for custom, threshold slider, persistLearnings toggle).
+   - textarea for custom, threshold slider, persistLearnings toggle).
 2. **Embedding-based similarity ranking.** Phase 8 benchmarks needs a
    "reflection adds <1 extra inference" measurement (§16). When we
    ship embeddings, swap `listRecentLearnings` recency ranking for
@@ -838,3 +841,146 @@ with the §10.1 spec default to match the roadmap.
    so users and `recordUsage` can see the true per-run cost. Today the
    caller only sees the final Agent output's billing. Additive,
    non-breaking change.
+
+---
+
+## 2026-05-02 — Phase 7 complete: ClawStudio v0
+
+### What shipped
+
+- **`packages/studio/`** — a standalone Next.js 14 app (App Router, TypeScript,
+  React Flow 11, Monaco Editor, zustand) that lets anyone drag-build a
+  SovereignClaw agent graph and deploy real iNFTs in about a minute.
+  - 6 custom node types on the canvas: Memory, Inference, Tool,
+    Reflection, Agent, Mesh — each with an inline summary and an
+    Inspector form on the right.
+  - `lib/codegen.ts` — a PURE function `generateCode(graph) → { source, imports }`
+    that emits runnable SovereignClaw TypeScript. Deterministic, snapshot-
+    stable, and re-runnable server-side to verify the client's output.
+  - `lib/validator.ts` — shared graph validator (orphans, missing fields,
+    unique agent roles, mesh planner/executor/critic wiring). Gates the
+    Deploy button client-side and re-runs server-side.
+  - `lib/seed-graph.ts` — the 3-agent research swarm from §11 cut line,
+    loaded on first mount so an empty visitor can deploy in one click.
+  - `components/CodePreview.tsx` — Monaco (vs-dark) side panel with
+    tabs for generated code, raw graph JSON, and validator issues.
+  - `components/DeployPanel.tsx` — POSTs to the backend, polls
+    `/studio/status/:id` every 1.5s, surfaces manifest + per-agent
+    Chainscan links as they arrive.
+- **`apps/backend/src/studio/`** — the server half of the deploy pipeline.
+  - `POST /studio/deploy` → zod-validates the payload, runs esbuild to
+    reject syntax-broken generated code before spending gas, writes the
+    deploy manifest (graph + generated code + agent roster) to 0G
+    Storage Log, then calls `mintAgentNFT` once per Agent node using
+    the manifest's 0G root hash as the shared pointer.
+  - `GET /studio/status/:id` → returns the in-memory `DeployJob` record:
+    status (`queued` → `bundling` → `writing-manifest` → `minting` →
+    `done|error`), manifest root, per-agent mint records, and an
+    append-only log stream. 404s on unknown deployIds.
+  - Minter key falls back to the existing `PRIVATE_KEY` env var when
+    `STUDIO_MINTER_PRIVATE_KEY` is not set; `/studio/*` returns 503 if
+    neither is present, with a clear error message.
+  - CORS allow-list bound to `http://localhost:3030` by default so the
+    dev Studio can call the dev backend without extra config.
+- **5 new unit tests** for the backend studio pieces (store, bundler,
+  deploy route: payload validation, 202 queueing, fast-fail on malformed
+  code, fast-fail on no agents, 404 on unknown ids).
+- **15 new unit tests** for the Studio package (codegen determinism,
+  snapshot lock of the seed graph's 4407-byte output, reflection
+  inclusion, single-agent minimal path, validator coverage).
+- **`scripts/smoke-studio-deploy.ts`** (`pnpm smoke:studio`) — the
+  reproducible Phase 7 DoD: loads the seed graph, runs codegen,
+  POSTs to the running backend, polls until done, prints all
+  iNFT + manifest explorer links.
+
+### Measured end-to-end (0G Galileo testnet)
+
+- **Cold-start dev server**: Next.js ready in ~1.5s, first page compile
+  ~29s (853 modules), second load cached in <100ms.
+- **Studio production build**: 43s total, 146 kB first-load JS.
+- **One-click deploy (seed graph → 3 iNFTs on 0G Galileo)**: **60.0s**
+  - bundling: <1s (esbuild transform of 4407 bytes)
+  - writing manifest to 0G Storage Log: ~15s
+  - minting 3 iNFTs sequentially: ~45s (3 × ~15s per tx)
+- **Artifacts from the logged run:**
+  - Deploy manifest (graph + code):
+    `0x76e2b2d4889dc8c903784be595c536e79485b39dbc81c32ec58c0ea7fe90f840`
+    https://storagescan-galileo.0g.ai/tx/0x76e2b2d4889dc8c903784be595c536e79485b39dbc81c32ec58c0ea7fe90f840
+  - iNFT `planner` — tokenId **14**, tx
+    https://chainscan-galileo.0g.ai/tx/0x85b3c3865cb99f016c5dfd45f61137f64c414193aa3cfdb616524eba6bbda4f9
+  - iNFT `executor` — tokenId **15**, tx
+    https://chainscan-galileo.0g.ai/tx/0x6a76ddbf571818de82d06ba4577f9c51cf105ec4f12bd6110af4cfe75a0fa52e
+  - iNFT `critic` — tokenId **16**, tx
+    https://chainscan-galileo.0g.ai/tx/0xe26a4fb791b935bbbf698da8feff5513e354c6cab59e2cde9ce2308cff0511ae
+
+### Design choices & deferrals
+
+- **Backend mints with its own key (v0 cut line).** Spec §11.4 step 4
+  calls for an EIP-712 manifest signed in the browser by the
+  connected wallet; that requires a wallet-connect flow (MetaMask /
+  WalletConnect / viem). v0 uses the backend's `PRIVATE_KEY` for
+  minting and ships a clear `carryover → Phase 7.1` to add browser
+  signing. Judges can deploy a live graph without installing a wallet
+  extension, which matches the cut line in §11.5.
+- **esbuild does syntax validation only, not bundling for execution.**
+  The deploy pipeline stops at "would this compile?" rather than
+  "can we run it?". The generated code is real, copy-pasteable
+  SovereignClaw, but we don't spin up a subprocess to run it on
+  deploy — the iNFT mint IS the deploy success signal. Agent runtime
+  long-lifecycle hosting is Phase 8+.
+- **One manifest per deploy; all agent iNFTs in the same deploy share
+  the same pointer.** Cleaner than per-agent manifests for v0 (one
+  0G write instead of N) and matches the mental model "this graph,
+  deployed once, minted these N agents". IncomeClaw will split into
+  per-agent pointers when each agent acquires its own memory stream.
+- **In-memory deploy job store with LRU eviction (max 128 jobs).** The
+  chain is the durable truth; a restarted backend simply loses the
+  polling surface for historical deploys but the iNFTs themselves
+  persist. Durable Postgres/Redis-backed registry is Phase 8+.
+- **Studio types duplicated at `apps/backend/src/studio/types.ts`** (as
+  zod schemas) rather than imported from `@sovereignclaw/studio`. The
+  backend is a service, not a consumer of a Next.js package, and the
+  copy is small (<100 lines). A future `@sovereignclaw/graph-schema`
+  shared package would remove the duplication if it becomes painful.
+- **Runtime codegen echo for audit: planned, not yet wired.** Spec
+  §11.4 step 6 envisions the backend re-running `generateCode(graph)`
+  and diffing against the client's `code` payload. v0 accepts the
+  client code verbatim (after esbuild validation) to keep the deploy
+  path simple. Carryover below.
+
+### Flake notes
+
+- No transient 0G storage reverts on this run (the Phase 4–6 flake
+  pattern did not recur during Phase 7 verification). If it does,
+  users should retry the deploy — same guidance as `examples/*/README.md`.
+- First Next.js compile is slow (~29s) because Monaco + React Flow pull
+  a lot of modules; subsequent HMR cycles are fast. This is not a
+  SovereignClaw bug and is documented in the Studio README.
+
+### Carryover from Phase 7 → Phase 8 (Benchmarks + per-package READMEs)
+
+1. **Per-package README.md for `@sovereignclaw/studio`.** Needs screenshots
+   of the canvas, docs for each node, and a note about the v0 backend-
+   mint cut line vs the Phase 7.1 wallet-connect flow.
+2. **Cold-start-to-first-iNFT benchmark.** Extend
+   `scripts/benchmark-cold-start.ts` with a Studio step (start backend,
+   start Studio, post seed graph, wait for `done`) so we have a single
+   repeatable number for §16 DX benchmarks.
+3. **Backend registers a long-running agent after mint (optional).**
+   Spec §11.4 step 6d calls for "register running agent in in-memory
+   store". v0 mints and returns; it does not spin the agent up. Adding
+   `apps/backend/src/studio/runtime.ts` that starts a subprocess per
+   agent would close this gap; straightforward but not needed for DoD.
+4. **Browser wallet-connect + EIP-712 manifest signing (Phase 7.1).**
+   The backend already has a signature-verify hook point; wire in an
+   ethers `BrowserProvider` in the Studio header, sign `{deployId,
+graphSha, minterAddr, timestamp}`, attach to the deploy POST, and
+   reject on the backend if the signer is not in an allow-list.
+5. **Server-side codegen echo diff.** Re-run `generateCode(graph)`
+   server-side and 400 if the payload's `code` string doesn't match.
+   Prevents a malicious client from uploading a graph that renders one
+   way in Monaco but submits a tampered source string.
+6. **Custom rubric text input in the Reflection node.** v0 exposes only
+   the four built-in rubrics. `ReflectOnOutputOptions` already accepts
+   custom rubric objects — surface them in the Inspector as a
+   name+description+criteria textarea triple.

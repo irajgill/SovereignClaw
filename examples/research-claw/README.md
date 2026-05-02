@@ -77,15 +77,15 @@ JSON-per-line. Four structured events before the free-form answer, then
 Reference values from the Phase 4 DoD run (tokenId #11). Your fees will
 differ slightly because the 0G indexer re-prices each upload.
 
-| Step                                | ~0G burned        | Where                |
-| ----------------------------------- | ----------------- | -------------------- |
-| Memory write — context (3.9 KB)     | ~0.000493 0G      | wallet (storage fee) |
-| History write — run record (3.8 KB) | ~0.000461 0G      | wallet (storage fee) |
-| Memory write — manifest (480 B)     | ~0.0000615 0G     | wallet (storage fee) |
-| Inference (qwen-2.5-7b, ~900 tok)   | 54,850 Gwei       | Router balance       |
-| Mint (AgentNFT.mint)                | ~0.0008 0G        | wallet (gas)         |
-| **Per-run wallet total**            | **~0.002 0G**     | wallet               |
-| **Per-run Router total**            | **~0.00006 0G**   | Router balance       |
+| Step                                | ~0G burned      | Where                |
+| ----------------------------------- | --------------- | -------------------- |
+| Memory write — context (3.9 KB)     | ~0.000493 0G    | wallet (storage fee) |
+| History write — run record (3.8 KB) | ~0.000461 0G    | wallet (storage fee) |
+| Memory write — manifest (480 B)     | ~0.0000615 0G   | wallet (storage fee) |
+| Inference (qwen-2.5-7b, ~900 tok)   | 54,850 Gwei     | Router balance       |
+| Mint (AgentNFT.mint)                | ~0.0008 0G      | wallet (gas)         |
+| **Per-run wallet total**            | **~0.002 0G**   | wallet               |
+| **Per-run Router total**            | **~0.00006 0G** | Router balance       |
 
 The faucet allowance (0.1 0G/day) covers ~50 runs per wallet on the chain side.
 Router has a separate balance funded at https://pc.testnet.0g.ai — a small

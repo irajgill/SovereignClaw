@@ -5,7 +5,12 @@
  * exercise the pattern's control flow without hitting any network.
  */
 import { describe, expect, it } from 'vitest';
-import { Agent, type ChatMessage, type InferenceAdapter, type InferenceResult } from '@sovereignclaw/core';
+import {
+  Agent,
+  type ChatMessage,
+  type InferenceAdapter,
+  type InferenceResult,
+} from '@sovereignclaw/core';
 import { InMemory } from '@sovereignclaw/memory';
 import { planExecuteCritique } from '../src/patterns/plan-execute-critique.js';
 import { Mesh } from '../src/mesh.js';
@@ -66,7 +71,10 @@ describe('planExecuteCritique', () => {
   it('accepts on round 1 when score is above threshold', async () => {
     const mesh = makeMesh();
     const planner = new Agent({ role: 'planner', inference: scripted(['1. research\n2. answer']) });
-    const executor = new Agent({ role: 'executor', inference: scripted(['The capital of France is Paris.']) });
+    const executor = new Agent({
+      role: 'executor',
+      inference: scripted(['The capital of France is Paris.']),
+    });
     const critic = new Agent({
       role: 'critic',
       inference: scripted(['{"score": 0.95, "suggestion": "none", "reasoning": "correct"}']),
@@ -195,7 +203,7 @@ describe('planExecuteCritique', () => {
 
   it('throws EmptyAgentOutputError if an agent returns nothing', async () => {
     const mesh = makeMesh();
-    const planner = new Agent({ role: 'planner', inference: scripted([''])});
+    const planner = new Agent({ role: 'planner', inference: scripted(['']) });
     const executor = new Agent({ role: 'executor', inference: scripted(['x']) });
     const critic = new Agent({
       role: 'critic',
@@ -241,9 +249,7 @@ describe('planExecuteCritique', () => {
     const executor = new Agent({ role: 'executor', inference: scripted(['x']) });
     const critic = new Agent({
       role: 'critic',
-      inference: scripted([
-        '```json\n{"score": 0.8, "suggestion": "", "reasoning": "ok"}\n```',
-      ]),
+      inference: scripted(['```json\n{"score": 0.8, "suggestion": "", "reasoning": "ok"}\n```']),
     });
 
     const result = await planExecuteCritique({

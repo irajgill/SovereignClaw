@@ -139,7 +139,7 @@ describe('Agent + reflectOnOutput', () => {
       reflect: reflectOnOutput({ persistLearnings: true }),
     });
     await agentA.run('Tell me about foo');
-    expect((await listRecentLearnings(history, 10))).toHaveLength(1);
+    expect(await listRecentLearnings(history, 10)).toHaveLength(1);
 
     // Round B: same history, different adapter — assert the agent call
     // includes a system message mentioning the prior learning.
@@ -229,9 +229,7 @@ describe('Agent + reflectOnOutput', () => {
       learningsContextLimit: 2,
     });
     await agent.run('Q');
-    const learnings = agentSeen[0]!.find((m) =>
-      m.content.startsWith('Prior reflected learnings'),
-    )!;
+    const learnings = agentSeen[0]!.find((m) => m.content.startsWith('Prior reflected learnings'))!;
     // 2 learnings means two numbered bullets
     expect(learnings.content.match(/^\s{2}\d\./gm)?.length).toBe(2);
   });

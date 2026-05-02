@@ -111,10 +111,9 @@ export class Bus {
         entries.push({ key: entry.key, seq });
       }
     } catch (err) {
-      throw new BusReplayError(
-        `Bus.replay: provider.list failed on mesh '${this.meshId}'`,
-        { cause: err as Error },
-      );
+      throw new BusReplayError(`Bus.replay: provider.list failed on mesh '${this.meshId}'`, {
+        cause: err as Error,
+      });
     }
     entries.sort((a, b) => a.seq - b.seq);
 
@@ -125,10 +124,9 @@ export class Bus {
       try {
         events.push(JSON.parse(new TextDecoder().decode(bytes)) as BusEvent);
       } catch (err) {
-        throw new BusReplayError(
-          `Bus.replay: failed to parse event at key ${key}`,
-          { cause: err as Error },
-        );
+        throw new BusReplayError(`Bus.replay: failed to parse event at key ${key}`, {
+          cause: err as Error,
+        });
       }
     }
     return events;

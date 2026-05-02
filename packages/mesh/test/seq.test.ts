@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  EVENT_KEY_PREFIX,
-  SEQ_KEY_WIDTH,
-  SeqCounter,
-  eventKey,
-  seqFromKey,
-} from '../src/seq.js';
+import { EVENT_KEY_PREFIX, SEQ_KEY_WIDTH, SeqCounter, eventKey, seqFromKey } from '../src/seq.js';
 
 describe('seq', () => {
   it('eventKey pads to fixed width', () => {

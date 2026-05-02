@@ -8,12 +8,12 @@ all from a single `pnpm dev`.
 
 ## Prerequisites
 
-| Tool | Version | Install |
-| --- | --- | --- |
-| Node.js | 22 LTS | https://nodejs.org / `nvm install 22` |
-| pnpm | 9+ | `corepack enable && corepack prepare pnpm@9 --activate` |
-| Foundry | latest | `curl -L https://foundry.paradigm.xyz \| bash && foundryup` |
-| git | any recent | (system package manager) |
+| Tool    | Version    | Install                                                     |
+| ------- | ---------- | ----------------------------------------------------------- |
+| Node.js | 22 LTS     | https://nodejs.org / `nvm install 22`                       |
+| pnpm    | 9+         | `corepack enable && corepack prepare pnpm@9 --activate`     |
+| Foundry | latest     | `curl -L https://foundry.paradigm.xyz \| bash && foundryup` |
+| git     | any recent | (system package manager)                                    |
 
 You also need **two testnet balances** on 0G Galileo (chainId `16602`):
 
@@ -115,15 +115,15 @@ Click the `explorerUrl` to see your newly minted iNFT on chainscan-galileo.
 
 ## What just happened
 
-| You did | Under the hood |
-| --- | --- |
-| `pnpm dev` | Loaded `.env`, bound a signer to 0G Galileo. |
-| — | Derived a KEK from your wallet signature (EIP-191 → HKDF-SHA-256). |
-| — | Built `encrypted(OG_Log(...))` providers — AES-256-GCM on every write. |
-| — | Called 0G Compute Router with `verify_tee: true`. |
+| You did                 | Under the hood                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------- |
+| `pnpm dev`              | Loaded `.env`, bound a signer to 0G Galileo.                                                |
+| —                       | Derived a KEK from your wallet signature (EIP-191 → HKDF-SHA-256).                          |
+| —                       | Built `encrypted(OG_Log(...))` providers — AES-256-GCM on every write.                      |
+| —                       | Called 0G Compute Router with `verify_tee: true`.                                           |
 | Saw `teeVerified: true` | `x_0g_trace.tee_verified` in the Router response, signed by the provider's TEE attestation. |
-| — | Wrote context + history + manifest to 0G Storage Log. |
-| Saw `tokenId: 11` | `AgentNFT.mint(...)` tx on 0G Chain at `0xc3f9975...`. |
+| —                       | Wrote context + history + manifest to 0G Storage Log.                                       |
+| Saw `tokenId: 11`       | `AgentNFT.mint(...)` tx on 0G Chain at `0xc3f9975...`.                                      |
 
 Four primitives, one command, all real on-chain artifacts.
 
@@ -141,14 +141,14 @@ The benchmark times five steps and writes a JSON report to
 `scripts/.benchmarks/cold-start.json`. Measured reference numbers from the
 Phase 4 DoD run on a Linux x64 workstation (Node 23.3, in-place flags):
 
-| Step                | Time    | Notes                                                       |
-| ------------------- | ------- | ----------------------------------------------------------- |
-| `pnpm install`      | ~1s     | warm lockfile, no network fetches                           |
-| `forge install`     | skipped | `contracts/lib/*` already present                           |
-| `forge build`       | ~0.1s   | incremental                                                 |
-| `pkg-build`         | ~4s     | core + memory + inft in parallel                            |
-| `research-claw-run` | ~80s    | 3 storage writes + inference + mint                         |
-| **Total**           | **~85s** | — see `scripts/.benchmarks/cold-start.json`                |
+| Step                | Time     | Notes                                       |
+| ------------------- | -------- | ------------------------------------------- |
+| `pnpm install`      | ~1s      | warm lockfile, no network fetches           |
+| `forge install`     | skipped  | `contracts/lib/*` already present           |
+| `forge build`       | ~0.1s    | incremental                                 |
+| `pkg-build`         | ~4s      | core + memory + inft in parallel            |
+| `research-claw-run` | ~80s     | 3 storage writes + inference + mint         |
+| **Total**           | **~85s** | — see `scripts/.benchmarks/cold-start.json` |
 
 A true first-clone cold start (wiping `node_modules` and `contracts/lib`)
 adds ~10s for `pnpm install` downloads and ~15s for `forge install`,
@@ -168,32 +168,41 @@ See `docs/dev-log.md` Phase 3 for the tracking note.
 ## Troubleshooting
 
 ### `missing required env var PRIVATE_KEY`
+
 Copy `.env.example` → `.env` and fill `PRIVATE_KEY`. The loader walks from
 example dir up to the repo root, so either location works.
 
 ### `RouterBalanceError` / HTTP 402 on the inference call
+
 The Router account tied to `COMPUTE_ROUTER_API_KEY` has zero balance.
 Deposit testnet 0G at https://pc.testnet.0g.ai and retry.
 
 ### `StorageSdkError: OG_Log: upload failed ...  status=0`
+
 Transient indexer-node flake on the pinned `@0gfoundation/0g-ts-sdk@1.2.1`.
 Retry once or twice — each retry rotates to a different storage node. See
 `docs/dev-log.md` Phase 3 for the tracking note.
 
 ### `Cannot find module '@sovereignclaw/core'` (or memory/inft)
+
 You skipped step 3. Run the workspace builds.
 
 ### `Cannot find module '../../../contracts/out/AgentNFT.sol/AgentNFT.json'`
+
 You skipped `forge build`. Run step 2's contracts block.
 
 ### `MintError: contract call reverted`
+
 Your wallet is probably out of gas. Check the balance:
+
 ```bash
 node -e "const e=require('ethers'); (async()=>{ const p=new e.JsonRpcProvider('https://evmrpc-testnet.0g.ai'); console.log(e.formatEther(await p.getBalance('0xYOUR_ADDRESS')), '0G'); })()"
 ```
+
 Top up at https://faucet.0g.ai.
 
 ### `check:deployment` fails with `oracle mismatch`
+
 Only matters for the Phase 3 example — ResearchClaw does not touch the
 oracle.
 

@@ -146,7 +146,9 @@ async function main(): Promise<void> {
     console.log(`  [${mark}] ${s.name.padEnd(22)} ${time}`);
   }
   console.log(`  ---------------------------------------`);
-  console.log(`  total wall time           ${formatHms(totalMs)}  (${(totalMs / 1000).toFixed(1)}s)`);
+  console.log(
+    `  total wall time           ${formatHms(totalMs)}  (${(totalMs / 1000).toFixed(1)}s)`,
+  );
   console.log('=========================================\n');
 
   const report = {

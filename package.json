@@ -33,6 +33,7 @@
     "rotate:oracle": "tsx scripts/rotate-oracle.ts",
     "inspect:router": "tsx scripts/inspect-router-response.ts",
     "benchmark:cold-start": "tsx scripts/benchmark-cold-start.ts",
+    "smoke:studio": "tsx scripts/smoke-studio-deploy.ts",
     "changeset": "changeset",
     "version-packages": "changeset version"
   },

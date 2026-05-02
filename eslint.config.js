@@ -10,11 +10,13 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/dist/**',
       '**/.turbo/**',
+      '**/.next/**',
       '**/coverage/**',
       'contracts/out/**',
       'contracts/cache/**',
       'contracts/lib/**',
       '.changeset/**',
+      '**/test/__snapshots__/**',
     ],
   },
 

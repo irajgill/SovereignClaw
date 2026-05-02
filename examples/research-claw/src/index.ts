@@ -94,7 +94,12 @@ async function main(): Promise<void> {
 
   const kek = await deriveKekFromSigner(signer, KEK_NAMESPACE);
   const memory = encrypted(
-    OG_Log({ namespace: `${KEK_NAMESPACE}-state`, rpcUrl: RPC_URL, indexerUrl: INDEXER_URL, signer }),
+    OG_Log({
+      namespace: `${KEK_NAMESPACE}-state`,
+      rpcUrl: RPC_URL,
+      indexerUrl: INDEXER_URL,
+      signer,
+    }),
     { kek },
   );
   const history = encrypted(
