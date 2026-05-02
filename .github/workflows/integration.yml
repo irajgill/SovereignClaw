@@ -1,0 +1,46 @@
+name: Integration (0G testnet)
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  smoke:
+    if: >-
+      github.event_name != 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'run-integration')
+    name: Phase 0 smoke (storage + compute + chain)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      INTEGRATION: '1'
+      RPC_URL: ${{ secrets.OG_RPC_URL }}
+      CHAIN_ID: '16602'
+      INDEXER_URL: ${{ secrets.OG_INDEXER_URL }}
+      EXPLORER_URL: https://chainscan-galileo.0g.ai
+      STORAGE_EXPLORER_URL: https://storagescan-galileo.0g.ai
+      PRIVATE_KEY: ${{ secrets.OG_CI_PRIVATE_KEY }}
+      COMPUTE_ROUTER_BASE_URL: ${{ secrets.OG_COMPUTE_ROUTER_URL }}
+      COMPUTE_ROUTER_API_KEY: ${{ secrets.OG_COMPUTE_API_KEY }}
+      COMPUTE_MODEL: qwen/qwen-2.5-7b-instruct
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Install forge-std
+        working-directory: contracts
+        run: forge install foundry-rs/forge-std --no-git
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm contracts:build
+      - run: pnpm smoke

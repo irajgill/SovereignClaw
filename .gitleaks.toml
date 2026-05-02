@@ -1,0 +1,7 @@
+[allowlist]
+description = "Files allowed to contain key-like strings"
+paths = [
+  '''(.*?)\.example$''',
+  '''(.*?)README\.md$''',
+  '''docs/''',
+]

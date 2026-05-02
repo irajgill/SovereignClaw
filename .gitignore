@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/lib/
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+.idea/
