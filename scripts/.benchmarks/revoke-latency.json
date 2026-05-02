@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "benchmark": "revoke-latency",
+  "capturedAt": "2026-05-02T23:38:17.188Z",
+  "node": "v23.3.0",
+  "chainId": 16602,
+  "oracleUrl": "http://localhost:8787",
+  "targets": {
+    "chainRevokeMs": 5000,
+    "observedRefuseMs": 5000
+  },
+  "samples": [
+    {
+      "index": 0,
+      "tokenId": "17",
+      "mintMs": 15658,
+      "chainRevokeMs": 12134,
+      "observedRefuseMs": 12140,
+      "mintTx": "0xe27829ec0c02858a187b641b96307ac3e550aa7c083afa85074f1cfca2829349",
+      "revokeTx": "0x7472809b626932526c0c3736df38d64a43d2f3806506fefb38358d3d1c30bcab"
+    }
+  ],
+  "summary": {
+    "n": 1,
+    "chainRevokeMedianMs": 12134,
+    "observedRefuseMedianMs": 12140,
+    "chainOk": false,
+    "observedOk": false
+  }
+}

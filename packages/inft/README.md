@@ -1,97 +1,89 @@
 # @sovereignclaw/inft
 
-ERC-7857-style iNFT lifecycle helpers for SovereignClaw. Wraps the deployed
-`AgentNFT` and `MemoryRevocation` contracts on 0G Galileo testnet.
+ERC-7857 iNFT lifecycle helpers for SovereignClaw — mint an agent as a
+token, transfer with oracle-mediated re-encryption, record usage events,
+and irrevocably revoke memory access. Wraps the deployed `AgentNFT` and
+`MemoryRevocation` contracts on 0G Galileo testnet.
+
+## Install
 
 ```bash
-pnpm add @sovereignclaw/inft ethers @sovereignclaw/memory
+pnpm add @sovereignclaw/inft @sovereignclaw/memory ethers
 ```
 
-## Mint
+The package imports ABIs from `contracts/out/`. Run `forge build` in
+`contracts/` once before building this package — the quickstart covers this.
 
-```ts
-import { Wallet, JsonRpcProvider } from 'ethers';
-import { mintAgentNFT, loadDeployment } from '@sovereignclaw/inft';
+## 10-line quickstart
 
-const provider = new JsonRpcProvider(process.env.RPC_URL);
-const owner = new Wallet(process.env.PRIVATE_KEY!, provider);
+```typescript
+import { Wallet, JsonRpcProvider, randomBytes } from 'ethers';
+import { loadDeployment, mintAgentNFT, revokeMemory, OracleClient } from '@sovereignclaw/inft';
+
+const signer = new Wallet(process.env.PRIVATE_KEY!, new JsonRpcProvider(process.env.RPC_URL!));
 const deployment = loadDeployment();
+const oracle = new OracleClient({ url: 'http://localhost:8787' });
 
 const minted = await mintAgentNFT({
-  agent: { role: 'researcher', getPointer: () => agent.getPointer() },
-  owner,
-  royaltyBps: 500,
+  agent: { role: 'researcher', getPointer: () => process.env.MEMORY_POINTER! },
+  owner: signer,
+  wrappedDEK: randomBytes(32),
   deployment,
 });
-console.log(minted.explorerUrl);
+await revokeMemory({ tokenId: minted.tokenId, owner: signer, oracle, deployment });
 ```
 
-## Transfer with re-encryption
+## API
 
-```ts
-import { transferAgentNFT, OracleClient } from '@sovereignclaw/inft';
-
-const oracle = new OracleClient({ url: 'http://localhost:8787' });
-const tx = await transferAgentNFT({
-  tokenId,
-  from: alice,
-  to: bob.address,
-  newOwnerPubkey: bob.signingKey.publicKey,
-  oracle,
-  deployment,
-});
-console.log(tx.explorerUrl);
-```
-
-## Revoke (irreversible)
-
-```ts
-import { revokeMemory } from '@sovereignclaw/inft';
-
-const result = await revokeMemory({ tokenId, owner: bob, oracle, deployment });
-console.log(result.explorerUrl);
-// After this: on-chain wrappedDEK is zeroed, AgentNFT.revoked = true,
-// MemoryRevocation.isRevoked(tokenId) = true. Oracle returns 410 on any
-// future /oracle/reencrypt for this tokenId. There is no undo.
-```
-
-## Record usage (royalty event)
-
-```ts
-import { recordUsage } from '@sovereignclaw/inft';
-
-await recordUsage({ tokenId, payer: '0x...', amount: 1_000_000n, signer: owner, deployment });
-```
+| Export                               | Kind  | Purpose                                                            |
+| ------------------------------------ | ----- | ------------------------------------------------------------------ |
+| `mintAgentNFT`                       | fn    | Mints one iNFT. Commits pointer + wrappedDEK + metadata hash.      |
+| `transferAgentNFT`                   | fn    | Transfers via oracle re-encryption; updates wrappedDEK atomically. |
+| `revokeMemory`                       | fn    | Owner signs → oracle registry → chain revoke. Irreversible.        |
+| `recordUsage`                        | fn    | Append a typed usage record for downstream analytics.              |
+| `OracleClient`                       | class | HTTP client for `/oracle/{pubkey,reencrypt,revoke,prove,healthz}`. |
+| `loadDeployment`                     | fn    | Reads `deployments/0g-testnet.json`. Throws if missing.            |
+| `AgentNFTAbi / MemoryRevocationAbi`  | const | Ethers-v6-compatible ABIs. Used internally; exposed for callers.   |
+| `explorerTxUrl / explorerAddressUrl` | fn    | Format chainscan links for mint/transfer/revoke receipts.          |
+| `digestForOracleProof` etc.          | fn    | EIP-712 helpers — used by the oracle; exposed for audit tests.     |
+| `CONTRACT_LIMITS`                    | const | On-chain field maxima (role/pointer/DEK byte lengths).             |
 
 ## Errors
 
-All operations throw typed errors. Catch by class:
+All extend `InftError`:
 
-- `MintError`, `TransferError`, `RevokeError`, `RecordUsageError`
-- `OracleClientError` and its subclasses: `OracleAuthError` (401),
-  `OracleRevokedError` (410), `OracleHttpError` (other 4xx/5xx),
-  `OracleTimeoutError`, `OracleUnreachableError`
-- `ContractRevertError` (revert from `AgentNFT` / `MemoryRevocation`)
-- `DeploymentNotFoundError`
+| Error                                         | When                                                                  |
+| --------------------------------------------- | --------------------------------------------------------------------- |
+| `MintError`                                   | Pre-flight validation failed or mint tx reverted.                     |
+| `TransferError`                               | Oracle rejected, chain reverted, or post-condition assertion failed.  |
+| `RevokeError`                                 | Oracle rejected, chain reverted, or post-condition assertion failed.  |
+| `RecordUsageError`                            | Usage tx reverted or over field-length limit.                         |
+| `OracleClientError`                           | Generic oracle transport error (parent).                              |
+| `OracleAuthError`                             | 401/403 from oracle (auth token mismatch).                            |
+| `OracleRevokedError`                          | 410 from oracle — token is already revoked.                           |
+| `OracleHttpError`                             | Any other 4xx/5xx from oracle.                                        |
+| `OracleTimeoutError / OracleUnreachableError` | Request timed out / couldn’t reach oracle.                            |
+| `ContractRevertError`                         | Parsed reason from a contract revert (wraps the underlying tx error). |
+| `DeploymentNotFoundError`                     | `deployments/0g-testnet.json` missing or malformed.                   |
 
-## EIP-712 details
+## Trust model
 
-The package exports the typehash constants the contract uses:
+- The oracle holds one EIP-712 signing key and is **the only entity that
+  can approve a transfer or a revoke**. On-chain, `AgentNFT` checks the
+  oracle signature before touching the wrappedDEK or the revoked bit.
+- `revokeMemory` is irreversible: the oracle flips its in-memory registry
+  **before** returning the proof, so any concurrent `/oracle/reencrypt`
+  for the same token 410s. The chain then permanently zeroes the DEK.
+- A misbehaving oracle cannot mint or transfer to someone else — those
+  require the owner’s signature as well, enforced on-chain.
 
-- `ORACLE_PROOF_TYPEHASH`, `DOMAIN_TYPEHASH`, `DOMAIN_NAME_HASH`, `DOMAIN_VERSION_HASH`
-- `digestForOracleProof(chainId, verifyingContract, fields)` — byte-identical
-  to `AgentNFT._verifyOracleProof`'s reconstruction.
-- `encodeOracleProof(fields, signature)` — the wire format the contract decodes.
+## Further reading
 
-The TS-side hashes are checked against a Foundry-emitted fixture
-(`deployments/eip712-typehashes.json`) on every test run; drift fails CI.
+- [`contracts/README.md`](../../contracts/README.md) — Solidity sources + fuzz tests.
+- [`apps/backend/README.md`](../../apps/backend/README.md) — the dev oracle implementation.
+- [`docs/benchmarks.md`](../../docs/benchmarks.md) — revocation latency on Galileo.
+- [`examples/agent-mint-transfer-revoke`](../../examples/agent-mint-transfer-revoke) — end-to-end lifecycle demo.
 
-## Layering
+## License
 
-Depends only on `@sovereignclaw/memory` (for the `Pointer` type) and `ethers`.
-Does not depend on `@sovereignclaw/core`. Per working agreement §19.5.
-
-## Examples
-
-See [examples/agent-mint-transfer-revoke](../../examples/agent-mint-transfer-revoke/)
-for an end-to-end mint → transfer → revoke flow against real 0G testnet.
+MIT — see the repo root.

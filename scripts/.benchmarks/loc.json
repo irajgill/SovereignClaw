@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "benchmark": "loc",
+  "capturedAt": "2026-05-02T23:30:53.960Z",
+  "node": "v23.3.0",
+  "samples": [
+    {
+      "name": "minimal-single-agent (API surface only)",
+      "source": "(generated)",
+      "rawLoc": 25,
+      "effectiveLoc": 24,
+      "target": 30,
+      "note": "the smallest sovereign agent: deps + memory + inference + run + close"
+    },
+    {
+      "name": "minimal-3-agent-mesh (API surface only)",
+      "source": "(generated)",
+      "rawLoc": 28,
+      "effectiveLoc": 27,
+      "target": 60,
+      "note": "the smallest planExecuteCritique mesh: 3 agents + mesh + run + close"
+    },
+    {
+      "name": "research-claw (hand-written example, includes scaffolding)",
+      "source": "examples/research-claw/src/index.ts",
+      "rawLoc": 230,
+      "effectiveLoc": 173,
+      "note": "reference example: env loading, event logging, iNFT mint, cleanup"
+    },
+    {
+      "name": "research-mesh (hand-written example, includes scaffolding)",
+      "source": "examples/research-mesh/src/index.ts",
+      "rawLoc": 194,
+      "effectiveLoc": 146,
+      "note": "reference example: bus event logging + replay check"
+    },
+    {
+      "name": "agent-mint-transfer-revoke (Phase 3 DoD)",
+      "source": "examples/agent-mint-transfer-revoke/src/index.ts",
+      "rawLoc": 257,
+      "effectiveLoc": 214,
+      "note": "full mint → transfer-with-reencryption → revoke lifecycle"
+    },
+    {
+      "name": "Studio-generated (3-agent research swarm)",
+      "source": "(generated)",
+      "rawLoc": 108,
+      "effectiveLoc": 87,
+      "note": "pure function output; includes dotenv + env helper scaffolding"
+    }
+  ]
+}

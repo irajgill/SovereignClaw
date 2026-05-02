@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "benchmark": "inference-rtt",
+  "capturedAt": "2026-05-02T23:32:13.434Z",
+  "node": "v23.3.0",
+  "model": "qwen/qwen-2.5-7b-instruct",
+  "router": "https://router-api-testnet.integratenetwork.work/v1",
+  "prompt": "What year was the Transformer paper published? One short sentence.",
+  "samples": [
+    {
+      "index": 0,
+      "elapsedMs": 1754,
+      "teeVerified": null,
+      "promptTokens": 33,
+      "completionTokens": 5,
+      "replyPreview": "2017."
+    },
+    {
+      "index": 1,
+      "elapsedMs": 555,
+      "teeVerified": null,
+      "promptTokens": 33,
+      "completionTokens": 5,
+      "replyPreview": "2017."
+    },
+    {
+      "index": 2,
+      "elapsedMs": 775,
+      "teeVerified": null,
+      "promptTokens": 33,
+      "completionTokens": 4,
+      "replyPreview": "2017"
+    }
+  ],
+  "summary": {
+    "n": 3,
+    "coldMs": 1754,
+    "warmMedianMs": 665,
+    "warmMinMs": 555,
+    "warmMaxMs": 775,
+    "coldTargetMs": 8000,
+    "coldOk": true,
+    "teeVerifiedAll": false
+  }
+}

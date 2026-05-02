@@ -2,16 +2,17 @@
 
 Sovereign-memory, multi-agent, iNFT-native agent framework for 0G.
 
-> **Status:** Phase 7 — ClawStudio v0 shipped. A Next.js drag-and-drop
-> builder now sits on top of everything: six node types (Memory,
-> Inference, Tool, Reflection, Agent, Mesh), a pure code generator with
-> snapshot tests, and a one-click Deploy button that writes a manifest
-> to 0G Storage and mints one iNFT per Agent node. The pre-seeded
-> 3-agent research swarm deploys in ~60s end-to-end on 0G Galileo.
-> Reflection (Phase 6), Mesh (Phase 5), and ResearchClaw (Phase 4) still
-> run standalone. See [`packages/studio/`](packages/studio/),
-> [`examples/research-claw`](examples/research-claw/),
-> [`examples/research-mesh`](examples/research-mesh/), then
+> **Status:** Phase 8 — benchmarks + per-package READMEs shipped. Every
+> public package (`memory`, `core`, `inft`, `mesh`, `reflection`) now
+> has a README with install, a 10-line quickstart, API + errors tables,
+> and links to the matching DoD example. Five live-testnet benchmarks
+> (`loc`, `inference-rtt`, `revoke-latency`, `mesh-throughput`, and the
+> Studio-extended `cold-start`) are committed with raw JSON; the
+> numbers and methodology live in
+> [docs/benchmarks.md](docs/benchmarks.md). A single-page architecture
+> map with the trust model is in [docs/architecture.md](docs/architecture.md).
+> ClawStudio (Phase 7), Reflection (Phase 6), Mesh (Phase 5), and
+> ResearchClaw (Phase 4) all still run standalone. See
 > [docs/quickstart.md](docs/quickstart.md) for the paste-able path and
 > [docs/dev-log.md](docs/dev-log.md) for build progress.
 
@@ -37,23 +38,26 @@ asserts the live `AgentNFT.oracle()` matches your local oracle key.
 
 ## What's built so far
 
-| Layer                                                                                   | Status                                                                             |
-| --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `@sovereignclaw/memory` (Phase 1)                                                       | Sovereign memory primitives — encrypted, revocable, 0G-Storage-backed              |
-| `@sovereignclaw/core` (Phase 1)                                                         | Agent runtime, `sealed0GInference` adapter                                         |
-| `AgentNFT.sol`, `MemoryRevocation.sol` (Phase 2)                                        | ERC-7857 iNFT lifecycle, deployed and pinned                                       |
-| [`@sovereignclaw/inft`](packages/inft/) (Phase 3)                                       | Mint / transfer-with-reencryption / revoke / recordUsage helpers                   |
-| [`@sovereignclaw/backend` dev oracle](apps/backend/) (Phase 3)                          | Hono service signing EIP-712 oracle proofs                                         |
-| [`examples/agent-mint-transfer-revoke`](examples/agent-mint-transfer-revoke/) (Phase 3) | DoD example: full lifecycle on real testnet                                        |
-| [`examples/research-claw`](examples/research-claw/) (Phase 4)                           | DoD example: sovereign agent + TEE inference + encrypted mint, ~80 LoC             |
-| [`docs/quickstart.md`](docs/quickstart.md) + `pnpm benchmark:cold-start` (Phase 4)      | Clone-to-iNFT paste path, reproducible ~85s cold-start benchmark                   |
-| [`@sovereignclaw/mesh`](packages/mesh/) (Phase 5)                                       | Bus over 0G Log, `planExecuteCritique`, typed events, 30 unit tests                |
-| [`examples/research-mesh`](examples/research-mesh/) (Phase 5)                           | DoD example: planner + executor + critic, 6 encrypted bus events on-log            |
-| [`@sovereignclaw/reflection`](packages/reflection/) (Phase 6)                           | `reflectOnOutput()`, 4 built-in rubrics, learnings persistence, 35 unit tests      |
-| `reflect: reflectOnOutput({...})` in ResearchClaw (Phase 6)                             | Self-critique on every run; `learning:<runId>` queryable via `listRecentLearnings` |
-| [`@sovereignclaw/studio`](packages/studio/) (Phase 7)                                   | Next.js drag-and-drop builder, 6 node types, pure codegen, Monaco preview          |
-| `/studio/deploy` + `/studio/status/:id` in backend (Phase 7)                            | esbuild-validates generated code, writes manifest to 0G, mints one iNFT per agent  |
-| `pnpm smoke:studio` (Phase 7)                                                           | Reproducible DoD: seed graph → 3 real iNFTs minted on 0G in ~60s                   |
+| Layer                                                                                                                                 | Status                                                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `@sovereignclaw/memory` (Phase 1)                                                                                                     | Sovereign memory primitives — encrypted, revocable, 0G-Storage-backed              |
+| `@sovereignclaw/core` (Phase 1)                                                                                                       | Agent runtime, `sealed0GInference` adapter                                         |
+| `AgentNFT.sol`, `MemoryRevocation.sol` (Phase 2)                                                                                      | ERC-7857 iNFT lifecycle, deployed and pinned                                       |
+| [`@sovereignclaw/inft`](packages/inft/) (Phase 3)                                                                                     | Mint / transfer-with-reencryption / revoke / recordUsage helpers                   |
+| [`@sovereignclaw/backend` dev oracle](apps/backend/) (Phase 3)                                                                        | Hono service signing EIP-712 oracle proofs                                         |
+| [`examples/agent-mint-transfer-revoke`](examples/agent-mint-transfer-revoke/) (Phase 3)                                               | DoD example: full lifecycle on real testnet                                        |
+| [`examples/research-claw`](examples/research-claw/) (Phase 4)                                                                         | DoD example: sovereign agent + TEE inference + encrypted mint, ~80 LoC             |
+| [`docs/quickstart.md`](docs/quickstart.md) + `pnpm benchmark:cold-start` (Phase 4)                                                    | Clone-to-iNFT paste path, reproducible ~85s cold-start benchmark                   |
+| [`@sovereignclaw/mesh`](packages/mesh/) (Phase 5)                                                                                     | Bus over 0G Log, `planExecuteCritique`, typed events, 30 unit tests                |
+| [`examples/research-mesh`](examples/research-mesh/) (Phase 5)                                                                         | DoD example: planner + executor + critic, 6 encrypted bus events on-log            |
+| [`@sovereignclaw/reflection`](packages/reflection/) (Phase 6)                                                                         | `reflectOnOutput()`, 4 built-in rubrics, learnings persistence, 35 unit tests      |
+| `reflect: reflectOnOutput({...})` in ResearchClaw (Phase 6)                                                                           | Self-critique on every run; `learning:<runId>` queryable via `listRecentLearnings` |
+| [`@sovereignclaw/studio`](packages/studio/) (Phase 7)                                                                                 | Next.js drag-and-drop builder, 6 node types, pure codegen, Monaco preview          |
+| `/studio/deploy` + `/studio/status/:id` in backend (Phase 7)                                                                          | esbuild-validates generated code, writes manifest to 0G, mints one iNFT per agent  |
+| `pnpm smoke:studio` (Phase 7)                                                                                                         | Reproducible DoD: seed graph → 3 real iNFTs minted on 0G in ~60s                   |
+| Per-package READMEs for `memory / core / inft / mesh / reflection` (Phase 8)                                                          | Install + 10-line quickstart + API table + errors table + links                    |
+| [`docs/architecture.md`](docs/architecture.md) (Phase 8)                                                                              | Layered stack diagram, build/run/revoke data flows, trust model                    |
+| [`docs/benchmarks.md`](docs/benchmarks.md) + `pnpm benchmark:{loc,inference-rtt,revoke-latency,mesh-throughput,cold-start}` (Phase 8) | Five live-testnet benchmarks; raw JSON committed under `scripts/.benchmarks/`      |
 
 ## Quickstart — clone → sovereign iNFT on 0G Galileo in <90 seconds
 

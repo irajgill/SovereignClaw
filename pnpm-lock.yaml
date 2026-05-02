@@ -33,6 +33,21 @@ importers:
       '@eslint/js':
         specifier: 9.12.0
         version: 9.12.0
+      '@sovereignclaw/core':
+        specifier: workspace:*
+        version: link:packages/core
+      '@sovereignclaw/inft':
+        specifier: workspace:*
+        version: link:packages/inft
+      '@sovereignclaw/memory':
+        specifier: workspace:*
+        version: link:packages/memory
+      '@sovereignclaw/mesh':
+        specifier: workspace:*
+        version: link:packages/mesh
+      '@sovereignclaw/studio':
+        specifier: workspace:*
+        version: link:packages/studio
       '@types/node':
         specifier: 22.7.5
         version: 22.7.5

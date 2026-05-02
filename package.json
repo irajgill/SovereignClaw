@@ -33,6 +33,10 @@
     "rotate:oracle": "tsx scripts/rotate-oracle.ts",
     "inspect:router": "tsx scripts/inspect-router-response.ts",
     "benchmark:cold-start": "tsx scripts/benchmark-cold-start.ts",
+    "benchmark:loc": "tsx scripts/benchmark-loc.ts",
+    "benchmark:inference-rtt": "tsx scripts/benchmark-inference-rtt.ts",
+    "benchmark:revoke-latency": "tsx scripts/benchmark-revoke-latency.ts",
+    "benchmark:mesh-throughput": "tsx scripts/benchmark-mesh-throughput.ts",
     "smoke:studio": "tsx scripts/smoke-studio-deploy.ts",
     "changeset": "changeset",
     "version-packages": "changeset version"
@@ -40,6 +44,11 @@
   "devDependencies": {
     "@changesets/cli": "2.27.9",
     "@eslint/js": "9.12.0",
+    "@sovereignclaw/core": "workspace:*",
+    "@sovereignclaw/inft": "workspace:*",
+    "@sovereignclaw/memory": "workspace:*",
+    "@sovereignclaw/mesh": "workspace:*",
+    "@sovereignclaw/studio": "workspace:*",
     "@types/node": "22.7.5",
     "eslint": "9.12.0",
     "eslint-config-prettier": "9.1.0",

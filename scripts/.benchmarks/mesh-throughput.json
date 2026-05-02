@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "benchmark": "mesh-throughput",
+  "capturedAt": "2026-05-02T23:36:58.379Z",
+  "node": "v23.3.0",
+  "model": "qwen/qwen-2.5-7b-instruct",
+  "maxRounds": 1,
+  "acceptThreshold": 0,
+  "samples": [
+    {
+      "index": 0,
+      "task": "Name the 2017 paper that introduced the Transformer architecture. Author + year + venue. One sentence each.",
+      "elapsedMs": 6652,
+      "rounds": 1,
+      "score": 0.5,
+      "accepted": true,
+      "outputPreview": "Diederik P. Kingma, Jimmy Ba, Adam Roberts, Rajesh Ranganath, Eric Jang, Linxi L"
+    },
+    {
+      "index": 1,
+      "task": "What is the capital of Mongolia? One short sentence.",
+      "elapsedMs": 3582,
+      "rounds": 1,
+      "score": 1,
+      "accepted": true,
+      "outputPreview": "Ulaanbaatar."
+    },
+    {
+      "index": 2,
+      "task": "Who won the 2010 Fields Medal for work on dynamics of exceptional holonomy? One sentence.",
+      "elapsedMs": 5166,
+      "rounds": 1,
+      "score": 0.8,
+      "accepted": true,
+      "outputPreview": "Markushevich winner of the 2010 Fields Medal was not associated with work on dyn"
+    }
+  ],
+  "summary": {
+    "n": 3,
+    "totalMs": 75441,
+    "totalSleepMs": 60000,
+    "activeMs": 15441,
+    "perTaskMedianMs": 5166,
+    "tasksPerSecondRaw": 0.039766174891637175,
+    "tasksPerSecondEffective": 0.19428793471925393,
+    "target": 0.5,
+    "ok": false,
+    "meshBusStorage": "InMemory (coordination-only; sealed0GInference hits real router)",
+    "note": "Raw throughput reflects the free-testnet router rate limit. Effective throughput excludes inter-task sleeps."
+  }
+}
