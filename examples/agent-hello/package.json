@@ -1,0 +1,22 @@
+{
+  "name": "agent-hello",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Phase 1 DoD example - runs an Agent against real 0G testnet, writes encrypted state to 0G Log.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sovereignclaw/core": "workspace:*",
+    "@sovereignclaw/memory": "workspace:*",
+    "dotenv": "16.4.5",
+    "ethers": "6.13.4"
+  },
+  "devDependencies": {
+    "tsx": "4.19.1",
+    "typescript": "5.6.3"
+  }
+}

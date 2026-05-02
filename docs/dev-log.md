@@ -57,3 +57,87 @@ combination. TEE attestation is a real, verified claim, not theatre.
 { inputCost: bigint; outputCost: bigint; totalCost: bigint }` block on
 every result. The roadmap §7.4 update from Phase 0 stands; we now have
 the field path it referenced.
+
+### Phase 1 Step 1.3 Turn B - Agent class + Phase 1 DoD
+
+- Typed event emitter (`run.start`, `run.complete`, `run.error`, `tool.call`,
+  `tool.result`).
+- Agent class composing inference + memory + history + tools + lifecycle hooks.
+- Run loop: build messages -> beforeRun -> inference -> afterRun -> persist
+  context -> append history -> emit `run.complete`. Lifecycle hooks per Section
+  7.5 (`onTransfer`/`onRevoke` bodies are Phase 3 territory but the hook surface
+  is reserved).
+- `examples/agent-hello`: end-to-end Phase 1 DoD example; runs against real 0G
+  Galileo testnet, writes encrypted context to 0G Log, prints attestation.
+
+**Phase 1 deferred:**
+
+- Tool-calling loop (model-driven function calling): Phase 2.
+- `onTransfer` hook body: Phase 3 (needs iNFT lifecycle).
+- `onRevoke` hook: Phase 3.
+- `maxConcurrentRuns` enforcement: Phase 5 (mesh introduces real concurrency).
+- Reflection module: Phase 6 (its own package).
+
+**Phase 1 status: DONE.** Tag: `phase-1-complete`.
+
+### Phase 1 Step 1.3 Turn A — core foundation
+
+- Typed errors: CoreError, InferenceError + 6 subtypes (Router{Auth,Balance,Client,Server}Error,
+  InferenceTimeoutError, EmptyInferenceResponseError, DirectModeUnsupportedError),
+  ToolError + 3 subtypes (Tool{Validation,Execution,Timeout}Error).
+- sealed0GInference adapter: Router-based, surfaces typed Attestation
+  (teeVerified, providerAddress, requestId from x_0g_trace) and BillingInfo
+  (input/output/total cost as bigint wei from x_0g_trace.billing).
+- Tool runtime: defineTool helper, executeTool with validation + timeout,
+  httpRequestTool built-in with optional allowedHosts whitelist.
+
+**Deferred from §7.3 (logged for later):**
+
+- onChainTx tool — not needed until Phase 3+ when iNFT lifecycle is exposed.
+- fileGen tool — needed for Phase 9 IncomeClaw pitch deck flow, not Phase 1.
+
+Both can be added in any future phase without breaking the public API.
+
+
+### Phase 1 Step 1.3 Turn B — Agent class + Phase 1 DoD
+
+- Typed event emitter (run.start, run.complete, run.error, tool.call, tool.result).
+- Agent class composing inference + memory + history + tools + lifecycle hooks.
+- Run loop: build messages → beforeRun → inference → afterRun → persist context →
+  append history → emit run.complete. Lifecycle hooks per §7.5 (onTransfer/onRevoke
+  bodies are Phase 3 territory but the hook surface is reserved).
+- examples/agent-hello: end-to-end Phase 1 DoD example; runs against real 0G
+  Galileo testnet, writes encrypted context to 0G Log, prints attestation.
+
+**Phase 1 deferred (each defensible per §19.15 / §7.5 hook reservations):**
+- Tool-calling loop (model-driven function calling): Phase 2.
+- onTransfer hook body: Phase 3 (needs iNFT lifecycle).
+- onRevoke hook: Phase 3.
+- maxConcurrentRuns enforcement: Phase 5 (mesh introduces real concurrency).
+- Reflection module: Phase 6 (its own package).
+
+**Phase 1 status: DONE.** Tag: `phase-1-complete`.
+
+
+### Phase 1 — DONE (May 2 2026)
+
+Phase 1 finish-line example ran cleanly against 0G Galileo testnet:
+- wallet: 0x236E59315dD2Fc05704915a6a1a7ba4791cc3b5B
+- example tx hash: 0x8d01de05b56c9d14b27908dc9ad2401e98ee99d1fca3e5163c6e29192362fe8b
+- ciphertext root: 0x15374fb658b3765de35ba8d09f4f68d2df38bd8d41988e4dba6c4bae67a917a6
+- model: qwen2.5-7b-instruct via 0G Compute Router
+- provider: 0xa48f01287233509FD694a22Bf840225062E67836
+- TEE verified: true
+- inference latency: 2.5s
+- per-call cost: 2.25e-6 0G
+
+Test counts at Phase 1 close: 108 unit (core 60 + memory 48), 3 integration,
+1 end-to-end example. Build, lint, typecheck all green.
+
+Phase 1 deferred (each defensible per §19.15, picked up in named later phases):
+- Tool-calling loop → Phase 2
+- onTransfer hook body, onRevoke → Phase 3
+- maxConcurrentRuns enforcement → Phase 5
+- Reflection module → Phase 6
+- onChainTx and fileGen tools → Phase 9 (IncomeClaw)
+

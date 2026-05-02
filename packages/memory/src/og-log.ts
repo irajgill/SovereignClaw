@@ -170,7 +170,10 @@ export function OG_Log(options: OgLogOptions): MemoryProvider {
  *
  * Used by integration tests and by future cross-process index recovery.
  */
-export async function readEnvelopeByRoot(indexerUrl: string, rootHash: string): Promise<LogEnvelope> {
+export async function readEnvelopeByRoot(
+  indexerUrl: string,
+  rootHash: string,
+): Promise<LogEnvelope> {
   const indexer = new Indexer(indexerUrl);
   const { mkdtempSync, readFileSync, rmSync } = await import('node:fs');
   const { tmpdir } = await import('node:os');
