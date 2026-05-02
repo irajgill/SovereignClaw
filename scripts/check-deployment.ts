@@ -66,8 +66,21 @@ async function main(): Promise<void> {
     });
   }
 
-  const registry = new ethers.Contract(record.addresses.MemoryRevocation, REGISTRY_ABI, provider);
-  const nft = new ethers.Contract(record.addresses.AgentNFT, NFT_ABI, provider);
+  const registry = new ethers.Contract(
+    record.addresses.MemoryRevocation,
+    REGISTRY_ABI,
+    provider,
+  ) as unknown as {
+    agentNFT: () => Promise<string>;
+    DESTROYED_SENTINEL: () => Promise<string>;
+  };
+  const nft = new ethers.Contract(record.addresses.AgentNFT, NFT_ABI, provider) as unknown as {
+    revocationRegistry: () => Promise<string>;
+    oracle: () => Promise<string>;
+    owner: () => Promise<string>;
+    name: () => Promise<string>;
+    symbol: () => Promise<string>;
+  };
 
   const registryAgentNFT = (await registry.agentNFT()) as string;
   checks.push({
@@ -97,6 +110,17 @@ async function main(): Promise<void> {
     detail: nftOracle,
   });
 
+  // Optional: if ORACLE_ADDRESS is set in env, assert the live oracle matches
+  // it. This catches "I forgot to rotate setOracle" before any mint/transfer.
+  const envOracle = process.env.ORACLE_ADDRESS;
+  if (envOracle && /^0x[0-9a-fA-F]{40}$/.test(envOracle)) {
+    checks.push({
+      name: 'AgentNFT.oracle == env.ORACLE_ADDRESS',
+      ok: nftOracle.toLowerCase() === envOracle.toLowerCase(),
+      detail: `chain=${nftOracle} env=${envOracle}`,
+    });
+  }
+
   const nftOwner = (await nft.owner()) as string;
   checks.push({
     name: 'AgentNFT.owner == record.deployer',
@@ -106,8 +130,16 @@ async function main(): Promise<void> {
 
   const nftName = (await nft.name()) as string;
   const nftSymbol = (await nft.symbol()) as string;
-  checks.push({ name: 'AgentNFT.name == "SovereignClaw Agent"', ok: nftName === 'SovereignClaw Agent', detail: nftName });
-  checks.push({ name: 'AgentNFT.symbol == "SCAGENT"', ok: nftSymbol === 'SCAGENT', detail: nftSymbol });
+  checks.push({
+    name: 'AgentNFT.name == "SovereignClaw Agent"',
+    ok: nftName === 'SovereignClaw Agent',
+    detail: nftName,
+  });
+  checks.push({
+    name: 'AgentNFT.symbol == "SCAGENT"',
+    ok: nftSymbol === 'SCAGENT',
+    detail: nftSymbol,
+  });
 
   for (const c of checks) {
     const tag = c.ok ? 'OK ' : 'FAIL';

@@ -3,7 +3,7 @@
   "chainId": 16602,
   "deployedAt": "2026-05-02T18:41:44.471Z",
   "deployer": "0x236E59315dD2Fc05704915a6a1a7ba4791cc3b5B",
-  "oracle": "0x236E59315dD2Fc05704915a6a1a7ba4791cc3b5B",
+  "oracle": "0x4a5CbF36C2aE90879f7c2eF5dCC32Fecb0b569e3",
   "txHashes": {
     "MemoryRevocation": "0x4015e1a585c1e2aa83fcfff1d9a1106aec1baa6c5fccec817e849eefcc81278d",
     "AgentNFT": "0x51627bc78152b4cb546b62521972d92dd875ff25a7ff7aef04d8d7c0af62b51b"
@@ -48,5 +48,13 @@
         ]
       }
     }
-  }
+  },
+  "oracleHistory": [
+    {
+      "from": "0x236E59315dD2Fc05704915a6a1a7ba4791cc3b5B",
+      "to": "0x4a5CbF36C2aE90879f7c2eF5dCC32Fecb0b569e3",
+      "txHash": "0x1350215cc6b521ac6a8d085a0bab1bb5ab1faded5931701b59886c124077aee1",
+      "at": "2026-05-02T19:43:30.034Z"
+    }
+  ]
 }

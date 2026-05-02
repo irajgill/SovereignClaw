@@ -1,0 +1,26 @@
+{
+  "name": "@sovereignclaw/example-agent-mint-transfer-revoke",
+  "version": "0.0.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit",
+    "test": "echo no-tests-here",
+    "lint": "echo no-lint-here",
+    "clean": "rm -rf node_modules .turbo"
+  },
+  "dependencies": {
+    "@sovereignclaw/inft": "workspace:*",
+    "@sovereignclaw/memory": "workspace:*",
+    "dotenv": "16.4.5",
+    "ethers": "6.13.4"
+  },
+  "devDependencies": {
+    "@types/node": "22.7.5",
+    "tsx": "4.19.1",
+    "typescript": "5.6.3"
+  }
+}

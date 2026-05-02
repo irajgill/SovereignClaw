@@ -41,6 +41,74 @@ jobs:
       - name: Install forge-std
         working-directory: contracts
         run: forge install foundry-rs/forge-std --no-git
+      - name: Install OpenZeppelin
+        working-directory: contracts
+        run: forge install OpenZeppelin/openzeppelin-contracts@v5.1.0 --no-git
       - run: pnpm install --frozen-lockfile
       - run: pnpm contracts:build
       - run: pnpm smoke
+
+  inft-lifecycle:
+    # Phase-3 DoD against real testnet: mint -> transfer -> revoke with the
+    # dev oracle running in the same job's container.
+    if: >-
+      github.event_name != 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'run-integration')
+    name: Phase 3 lifecycle (mint + transfer + revoke)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      INTEGRATION: '1'
+      RPC_URL: ${{ secrets.OG_RPC_URL }}
+      CHAIN_ID: '16602'
+      INDEXER_URL: ${{ secrets.OG_INDEXER_URL }}
+      EXPLORER_URL: https://chainscan-galileo.0g.ai
+      PRIVATE_KEY: ${{ secrets.OG_CI_PRIVATE_KEY }}
+      BOB_PRIVATE_KEY: ${{ secrets.OG_CI_BOB_PRIVATE_KEY }}
+      ORACLE_PRIVATE_KEY: ${{ secrets.OG_CI_ORACLE_PRIVATE_KEY }}
+      ORACLE_ADDRESS: ${{ secrets.OG_CI_ORACLE_ADDRESS }}
+      ORACLE_URL: http://localhost:8787
+      LOG_LEVEL: info
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Install forge-std
+        working-directory: contracts
+        run: forge install foundry-rs/forge-std --no-git
+      - name: Install OpenZeppelin
+        working-directory: contracts
+        run: forge install OpenZeppelin/openzeppelin-contracts@v5.1.0 --no-git
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm contracts:build
+      - name: Build packages
+        run: pnpm --filter @sovereignclaw/memory --filter @sovereignclaw/inft build
+      - name: Boot dev oracle
+        run: |
+          pnpm --filter @sovereignclaw/backend dev > /tmp/oracle.log 2>&1 &
+          echo "ORACLE_PID=$!" >> $GITHUB_ENV
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8787/healthz > /dev/null; then
+              echo "oracle up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "oracle did not come up"; cat /tmp/oracle.log; exit 1
+      - name: Confirm on-chain oracle matches our dev oracle
+        run: pnpm check:deployment
+      - name: Run inft integration suite
+        run: pnpm --filter @sovereignclaw/inft test:integration
+      - name: Tail oracle logs
+        if: always()
+        run: tail -200 /tmp/oracle.log || true
+      - name: Stop dev oracle
+        if: always()
+        run: kill $ORACLE_PID 2>/dev/null || true

@@ -98,7 +98,6 @@ the field path it referenced.
 
 Both can be added in any future phase without breaking the public API.
 
-
 ### Phase 1 Step 1.3 Turn B — Agent class + Phase 1 DoD
 
 - Typed event emitter (run.start, run.complete, run.error, tool.call, tool.result).
@@ -110,6 +109,7 @@ Both can be added in any future phase without breaking the public API.
   Galileo testnet, writes encrypted context to 0G Log, prints attestation.
 
 **Phase 1 deferred (each defensible per §19.15 / §7.5 hook reservations):**
+
 - Tool-calling loop (model-driven function calling): Phase 2.
 - onTransfer hook body: Phase 3 (needs iNFT lifecycle).
 - onRevoke hook: Phase 3.
@@ -118,10 +118,10 @@ Both can be added in any future phase without breaking the public API.
 
 **Phase 1 status: DONE.** Tag: `phase-1-complete`.
 
-
 ### Phase 1 — DONE (May 2 2026)
 
 Phase 1 finish-line example ran cleanly against 0G Galileo testnet:
+
 - wallet: 0x236E59315dD2Fc05704915a6a1a7ba4791cc3b5B
 - example tx hash: 0x8d01de05b56c9d14b27908dc9ad2401e98ee99d1fca3e5163c6e29192362fe8b
 - ciphertext root: 0x15374fb658b3765de35ba8d09f4f68d2df38bd8d41988e4dba6c4bae67a917a6
@@ -135,6 +135,7 @@ Test counts at Phase 1 close: 108 unit (core 60 + memory 48), 3 integration,
 1 end-to-end example. Build, lint, typecheck all green.
 
 Phase 1 deferred (each defensible per §19.15, picked up in named later phases):
+
 - Tool-calling loop → Phase 2
 - onTransfer hook body, onRevoke → Phase 3
 - maxConcurrentRuns enforcement → Phase 5
@@ -168,6 +169,7 @@ Phase 1 deferred (each defensible per §19.15, picked up in named later phases):
    for the Pointer type. Add `"@sovereignclaw/memory": "workspace:*"` to its
    package.json from the start. (`@sovereignclaw/core` does not depend on
    inft and shouldn't — keep the layering clean.)
+
 ---
 
 ## Phase 2 — Smart contracts (May 2026)
@@ -195,10 +197,10 @@ Phase 1 deferred (each defensible per §19.15, picked up in named later phases):
 
 ### Deployed addresses
 
-| Contract | Address | Tx |
-|---|---|---|
+| Contract         | Address                                      | Tx                                                                   |
+| ---------------- | -------------------------------------------- | -------------------------------------------------------------------- |
 | MemoryRevocation | `0x735084C861E64923576D04d678bA2f89f6fbb6AC` | `0x4015e1a585c1e2aa83fcfff1d9a1106aec1baa6c5fccec817e849eefcc81278d` |
-| AgentNFT | `0xc3f997545da4AA8E70C82Aab82ECB48722740601` | `0x51627bc78152b4cb546b62521972d92dd875ff25a7ff7aef04d8d7c0af62b51b` |
+| AgentNFT         | `0xc3f997545da4AA8E70C82Aab82ECB48722740601` | `0x51627bc78152b4cb546b62521972d92dd875ff25a7ff7aef04d8d7c0af62b51b` |
 
 Deployer/initial-oracle: `0x236E59315dD2Fc05704915a6a1a7ba4791cc3b5B`. The
 oracle is set to the deployer as a Phase-2 placeholder and will be rotated
@@ -307,3 +309,143 @@ with for the Router `tee_verified` field. Documented, not papered over.
    `package.json`; CI integration job in `.github/workflows/ci.yml` runs it
    alongside `forge test`. Adding new tests will require running
    `pnpm contracts:snapshot` and committing the updated snapshot.
+
+---
+
+## Phase 3 — Dev oracle + iNFT v0 (May 2026)
+
+### What shipped
+
+- [apps/backend/](../apps/backend/) — Hono on Node 22. Routes
+  `/healthz`, `/oracle/pubkey`, `/oracle/prove`, `/oracle/reencrypt`,
+  `/oracle/revoke`. Optional bearer auth. Loads its EIP-712 typehashes via
+  re-export from `@sovereignclaw/inft`, which is byte-equal-checked against
+  the Foundry-emitted fixture in `deployments/eip712-typehashes.json`. Ships
+  with a multi-stage Dockerfile and a `docker-compose.yml` that brings the
+  oracle up on `:8787`.
+- [packages/inft/](../packages/inft/) — `mintAgentNFT`, `transferAgentNFT`,
+  `revokeMemory`, `recordUsage`, `OracleClient`, `loadDeployment`. Pure
+  ethers + JSON ABIs from `contracts/out/`. Zero `@sovereignclaw/core`
+  dep. Typed errors only.
+- [contracts/test/EmitTypeHashes.t.sol](../contracts/test/EmitTypeHashes.t.sol)
+  — emits `deployments/eip712-typehashes.json` so the off-chain TS code
+  can assert byte-equality against on-chain constants.
+- [examples/agent-mint-transfer-revoke/](../examples/agent-mint-transfer-revoke/)
+  — the Phase-3 DoD example. Mint → transfer (oracle re-encryption) →
+  revoke against real testnet, with on-chain assertions and a final
+  `OracleRevokedError` check.
+- [scripts/gen-oracle-key.ts](../scripts/gen-oracle-key.ts) and
+  [scripts/rotate-oracle.ts](../scripts/rotate-oracle.ts) — dev-oracle
+  key generation and `setOracle` rotation helpers.
+- [docs/security.md](./security.md) v1 — first cut of the trust model.
+
+### Test counts
+
+| Suite                                  | Count       | Notes                                                                                          |
+| -------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
+| `@sovereignclaw/inft` unit             | 33          | mint, transfer, revoke, oracle client, deployment loader, EIP-712 roundtrip + tamper-detection |
+| `@sovereignclaw/inft` integration      | 2           | real testnet mint→transfer→revoke + post-revoke 410                                            |
+| `@sovereignclaw/backend` unit          | 16          | crypto roundtrip, store, all four oracle routes                                                |
+| Foundry (Phase 2 + new EmitTypeHashes) | 76          | Phase 2's 75 + 1 typehash emitter                                                              |
+| `@sovereignclaw/memory` (regression)   | (unchanged) |                                                                                                |
+| `@sovereignclaw/core` (regression)     | (unchanged) |                                                                                                |
+
+### Live oracle rotation
+
+`setOracle` was called from the deployer wallet to point AgentNFT at the
+generated dev-oracle key:
+
+| Field           | Value                                                                                                                        |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| previous oracle | `0x236E59315dD2Fc05704915a6a1a7ba4791cc3b5B` (deployer placeholder)                                                          |
+| new oracle      | `0x4a5CbF36C2aE90879f7c2eF5dCC32Fecb0b569e3` (dev oracle)                                                                    |
+| tx              | [`0x1350215c…77aee1`](https://chainscan-galileo.0g.ai/tx/0x1350215cc6b521ac6a8d085a0bab1bb5ab1faded5931701b59886c124077aee1) |
+
+Append-only history kept in `deployments/0g-testnet.json::oracleHistory`.
+`pnpm check:deployment` was extended to optionally assert
+`AgentNFT.oracle == env.ORACLE_ADDRESS` and now passes 9/9 + (optional) 10/10
+with both env vars set.
+
+### End-to-end DoD txs (one of the five clean runs)
+
+| Step                               | Tx                    | Explorer                                                                                                      |
+| ---------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Mint (Alice → token #1)            | `0xe5fe06f1…1d0421`   | [view](https://chainscan-galileo.0g.ai/tx/0xe5fe06f18799a96942d7aa1386f158be36015c1bc528b1e9e30ce58a6d1d0421) |
+| Transfer (oracle re-encrypt → Bob) | `0xb7ded247…cdbbc70e` | [view](https://chainscan-galileo.0g.ai/tx/0xb7ded247513c897bc441044973b29fe42918bc2d59d5c7629db17b03cdbbc70e) |
+| Revoke (Bob)                       | `0xae996473…0f384cc`  | [view](https://chainscan-galileo.0g.ai/tx/0xae99647335154b587de3c1e32c7e40902caea9cea52cfd9fe630501d50f384cc) |
+
+Five consecutive clean runs of `pnpm dev` from
+`examples/agent-mint-transfer-revoke` succeeded with no flake. Each run
+mints a fresh tokenId so we don't depend on any session/test ordering.
+
+### Design refinements made during implementation
+
+1. **EIP-712 fixture as bridge.** Rather than hand-typing the four typehashes
+   in TS, the Foundry test `EmitTypeHashes.t.sol` writes them to
+   `deployments/eip712-typehashes.json`. The TS unit test recomputes locally
+   from canonical strings and asserts equality with the fixture. Drift on
+   either side fails CI.
+
+2. **Phase 3 placeholder re-encryption** in `apps/backend/src/routes/oracle/reencrypt.ts`
+   passes the on-chain `wrappedDEK` bytes through unchanged when re-issuing
+   for the new owner. The example flow exercises the contract path
+   end-to-end; the meaningful crypto upgrade (TEE-attested ECIES) is a
+   Phase 8+ deliverable. Documented in
+   `apps/backend/README.md`, `docs/security.md`, and inline.
+
+3. **Oracle's revocation registry is process-local.** `apps/backend/src/store.ts`
+   carries a deliberately-minimal in-memory `Map`. The persistence gap is
+   documented at the top of the file. Belt-and-suspenders: `/oracle/reencrypt`
+   _also_ reads the on-chain `Agent.revoked` flag and mirrors it back into
+   the local set on every request, so a restart followed by a re-encrypt
+   attempt will mark the token revoked again before the chain rejects.
+
+4. **Dotenv is loaded by walking up.** `apps/backend/src/config.ts` and the
+   example `src/index.ts` both look for `.env` at the repo root first, then
+   cwd, then their own dir. This was driven by running `pnpm tsx src/server.ts`
+   from `apps/backend/` not picking up the root `.env`.
+
+5. **Workspace deps for repo-root scripts.** `scripts/rotate-oracle.ts`
+   couldn't `import { AgentNFTAbi } from '@sovereignclaw/inft'` because the
+   workspace root has no `node_modules/@sovereignclaw/*`. Switched to
+   `createRequire()` reading the JSON artifact directly from `contracts/out/`.
+
+6. **Re-entrancy test reframing** (Phase 2 carryover noted explicitly in
+   Phase 3 readiness check). The Phase 2 nonReentrant test mints into a
+   malicious receiver — `transferWithReencryption` uses `_transfer` which
+   does not call `onERC721Received`, so the original "attacker re-enters
+   during transfer" story doesn't structurally apply. Phase 2 reframed
+   correctly; Phase 3 confirms the wiring still holds.
+
+### Source verification on chainscan-galileo (Phase 2 carryover)
+
+Re-checked during Phase 3. The chainscan-galileo SPA still serves its
+3.3 KB shell at every API path. Manual UI upload is also blocked — the
+`Verify and Publish` UI is not functional at this snapshot. Flattened
+sources remain at [deployments/flattened/](../deployments/flattened/).
+**No change since Phase 2; documented and moved on.** The
+`pnpm verify:contracts` script is in place and will work without
+modification when 0G ships an API.
+
+### Carryover from Phase 3 → Phase 4 (ResearchClaw + quickstart)
+
+1. **Quickstart docs must walk users through the _three_-balance reality**:
+   wallet (faucet → wallet for gas), Router deposit (wallet → Router for
+   compute), and Bob/test wallet for transfer testing. Phase 0 risk #21
+   covered the first two; Phase 3 added a third because the example
+   requires two funded wallets.
+
+2. **Real ECIES re-encryption.** Phase 3 placeholder is documented; Phase 8
+   (security) is the natural home for replacing it, but the API contract is
+   stable so `apps/backend/src/routes/oracle/reencrypt.ts` is the only file
+   that needs to change.
+
+3. **Persist the oracle revocation registry.** Either back it with Redis
+   (matches the existing `BullMQ` plan in §3.6) or rebuild from the chain
+   on boot. Add to Phase 8 or sooner if any persistent oracle deploys.
+
+4. **Source verification flip on chainscan-galileo.** Continue probing
+   periodically; `pnpm verify:contracts` is wired up. When 0G ships a
+   verifier endpoint, run it and flip `verified` to `true` in
+   `deployments/0g-testnet.json`. (Could be a scheduled background agent —
+   `/schedule` an agent to retry monthly.)

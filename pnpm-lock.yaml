@@ -58,6 +58,49 @@ importers:
         specifier: 8.8.1
         version: 8.8.1(eslint@9.12.0)(typescript@5.6.3)
 
+  apps/backend:
+    dependencies:
+      '@hono/node-server':
+        specifier: 1.13.2
+        version: 1.13.2(hono@4.6.5)
+      '@sovereignclaw/inft':
+        specifier: workspace:*
+        version: link:../../packages/inft
+      ethers:
+        specifier: 6.13.4
+        version: 6.13.4(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      hono:
+        specifier: 4.6.5
+        version: 4.6.5
+      pino:
+        specifier: 9.5.0
+        version: 9.5.0
+      zod:
+        specifier: 3.23.8
+        version: 3.23.8
+    devDependencies:
+      '@types/node':
+        specifier: 22.7.5
+        version: 22.7.5
+      dotenv:
+        specifier: 16.4.5
+        version: 16.4.5
+      pino-pretty:
+        specifier: 11.2.2
+        version: 11.2.2
+      tsup:
+        specifier: 8.3.0
+        version: 8.3.0(postcss@8.5.13)(tsx@4.19.1)(typescript@5.6.3)
+      tsx:
+        specifier: 4.19.1
+        version: 4.19.1
+      typescript:
+        specifier: 5.6.3
+        version: 5.6.3
+      vitest:
+        specifier: 2.1.2
+        version: 2.1.2(@types/node@22.7.5)
+
   examples/agent-hello:
     dependencies:
       '@sovereignclaw/core':
@@ -80,6 +123,31 @@ importers:
         specifier: 5.6.3
         version: 5.6.3
 
+  examples/agent-mint-transfer-revoke:
+    dependencies:
+      '@sovereignclaw/inft':
+        specifier: workspace:*
+        version: link:../../packages/inft
+      '@sovereignclaw/memory':
+        specifier: workspace:*
+        version: link:../../packages/memory
+      dotenv:
+        specifier: 16.4.5
+        version: 16.4.5
+      ethers:
+        specifier: 6.13.4
+        version: 6.13.4(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+    devDependencies:
+      '@types/node':
+        specifier: 22.7.5
+        version: 22.7.5
+      tsx:
+        specifier: 4.19.1
+        version: 4.19.1
+      typescript:
+        specifier: 5.6.3
+        version: 5.6.3
+
   packages/core:
     dependencies:
       '@sovereignclaw/memory':
@@ -89,6 +157,31 @@ importers:
         specifier: 3.23.8
         version: 3.23.8
     devDependencies:
+      tsup:
+        specifier: 8.3.0
+        version: 8.3.0(postcss@8.5.13)(tsx@4.19.1)(typescript@5.6.3)
+      typescript:
+        specifier: 5.6.3
+        version: 5.6.3
+      vitest:
+        specifier: 2.1.2
+        version: 2.1.2(@types/node@22.7.5)
+
+  packages/inft:
+    dependencies:
+      '@sovereignclaw/memory':
+        specifier: workspace:*
+        version: link:../memory
+      ethers:
+        specifier: 6.13.4
+        version: 6.13.4(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+    devDependencies:
+      '@types/node':
+        specifier: 22.7.5
+        version: 22.7.5
+      dotenv:
+        specifier: 16.4.5
+        version: 16.4.5
       tsup:
         specifier: 8.3.0
         version: 8.3.0(postcss@8.5.13)(tsx@4.19.1)(typescript@5.6.3)
@@ -522,6 +615,12 @@ packages:
 
   '@ethersproject/logger@5.8.0':
     resolution: {integrity: sha512-Qe6knGmY+zPPWTC+wQrpitodgBfH7XoceCGL5bJVejmH+yCS3R8jJm8iiWuvWbG76RUmyEG53oqv6GMVWqunjA==}
+
+  '@hono/node-server@1.13.2':
+    resolution: {integrity: sha512-0w8nEmAyx0Ul0CQp8BL2VtAG4YVdpzXd/mvvM+l0G5Oq22pUyHS+KeFFPSY+czLOF5NAiV3MUNPD1n14Ol5svg==}
+    engines: {node: '>=18.14.1'}
+    peerDependencies:
+      hono: ^4
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -1313,6 +1412,10 @@ packages:
 
   help-me@5.0.0:
     resolution: {integrity: sha512-7xgomUX6ADmcYzFik0HzAxh/73YlKR9bmFzf51CZwR+b6YtzU2m0u49hQCqV6SvlqIqsaxovfwdvbnsw3b/zpg==}
+
+  hono@4.6.5:
+    resolution: {integrity: sha512-qsmN3V5fgtwdKARGLgwwHvcdLKursMd+YOt69eGpl1dUCJb8mCd7hZfyZnBYjxCegBG7qkJRQRUy2oO25yHcyQ==}
+    engines: {node: '>=16.9.0'}
 
   human-id@1.0.2:
     resolution: {integrity: sha512-UNopramDEhHJD+VR+ehk8rOslwSfByxPIZyJRfV739NDhN5LF1fa1MqnzKm2lGTQRjNrjK19Q5fhkgIfjlVUKw==}
@@ -2498,6 +2601,10 @@ snapshots:
 
   '@ethersproject/logger@5.8.0': {}
 
+  '@hono/node-server@1.13.2(hono@4.6.5)':
+    dependencies:
+      hono: 4.6.5
+
   '@humanfs/core@0.19.2':
     dependencies:
       '@humanfs/types': 0.15.0
@@ -3340,6 +3447,8 @@ snapshots:
       function-bind: 1.1.2
 
   help-me@5.0.0: {}
+
+  hono@4.6.5: {}
 
   human-id@1.0.2: {}
 

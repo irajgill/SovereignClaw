@@ -1,0 +1,28 @@
+# Bring the SovereignClaw dev oracle up locally on :8787.
+#
+# Usage:
+#   cp ../../.env.example ../../.env       # then fill in PRIVATE_KEY/ORACLE_PRIVATE_KEY
+#   docker compose -f apps/backend/docker-compose.yml --env-file ../../.env up --build
+#
+# Or from this directory:
+#   docker compose --env-file ../../.env up --build
+services:
+  oracle:
+    build:
+      context: ../..
+      dockerfile: apps/backend/Dockerfile
+    image: sovereignclaw-backend:dev
+    container_name: sovereignclaw-oracle
+    ports:
+      - '8787:8787'
+    environment:
+      PORT: 8787
+      ORACLE_PRIVATE_KEY: ${ORACLE_PRIVATE_KEY:?set ORACLE_PRIVATE_KEY in .env}
+      ORACLE_AUTH_TOKEN: ${ORACLE_AUTH_TOKEN:-}
+      RPC_URL: ${RPC_URL:-https://evmrpc-testnet.0g.ai}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8787/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 5

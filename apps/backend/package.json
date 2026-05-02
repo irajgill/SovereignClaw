@@ -1,0 +1,37 @@
+{
+  "name": "@sovereignclaw/backend",
+  "version": "0.0.0",
+  "description": "Multi-purpose backend for SovereignClaw: dev oracle (Phase 3), studio deploy (Phase 7).",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "main": "./dist/server.js",
+  "scripts": {
+    "build": "tsup",
+    "start": "node dist/server.js",
+    "dev": "tsx src/server.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "INTEGRATION=1 vitest run --config vitest.integration.config.ts",
+    "lint": "eslint src test",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@hono/node-server": "1.13.2",
+    "@sovereignclaw/inft": "workspace:*",
+    "ethers": "6.13.4",
+    "hono": "4.6.5",
+    "pino": "9.5.0",
+    "zod": "3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "22.7.5",
+    "dotenv": "16.4.5",
+    "pino-pretty": "11.2.2",
+    "tsup": "8.3.0",
+    "tsx": "4.19.1",
+    "typescript": "5.6.3",
+    "vitest": "2.1.2"
+  }
+}

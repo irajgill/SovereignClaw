@@ -95,10 +95,10 @@ documented fallback path called out in the Phase 2 dev log.
    version **default** (the foundry.toml defaults).
 5. Constructor args (ABI-encoded, exactly as the deploy used them):
 
-   | Contract | Encoded constructor args |
-   |---|---|
-   | MemoryRevocation | `0x000000000000000000000000c3f997545da4aa8e70c82aab82ecb48722740601` |
-   | AgentNFT | see `deployments/0g-testnet.json` → `verification.constructorArgs.AgentNFT` |
+   | Contract         | Encoded constructor args                                                    |
+   | ---------------- | --------------------------------------------------------------------------- |
+   | MemoryRevocation | `0x000000000000000000000000c3f997545da4aa8e70c82aab82ecb48722740601`        |
+   | AgentNFT         | see `deployments/0g-testnet.json` → `verification.constructorArgs.AgentNFT` |
 
    Full encoded blob for AgentNFT (from the deploy broadcast):
    `0x000000000000000000000000735084c861e64923576d04d678ba2f89f6fbb6ac000000000000000000000000236e59315dd2fc05704915a6a1a7ba4791cc3b5b00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000013536f7665726569676e436c6177204167656e7400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000753434147454e5400000000000000000000000000000000000000000000000000`

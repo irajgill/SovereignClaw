@@ -53,12 +53,7 @@ function buildTargets(record: DeploymentRecord): VerifyTarget[] {
   // AgentNFT(address registry, address oracle, string name, string symbol)
   const nftArgs = abiCoder.encode(
     ['address', 'address', 'string', 'string'],
-    [
-      record.addresses.MemoryRevocation,
-      record.oracle,
-      'SovereignClaw Agent',
-      'SCAGENT',
-    ],
+    [record.addresses.MemoryRevocation, record.oracle, 'SovereignClaw Agent', 'SCAGENT'],
   );
   return [
     {
@@ -92,7 +87,10 @@ function verifyOne(target: VerifyTarget, env: ReturnType<typeof loadEnv>): boole
     target.encodedConstructorArgs,
     '--watch',
   ];
-  logger.info({ target: target.name, address: target.address, verifierUrl }, 'verify: invoking forge');
+  logger.info(
+    { target: target.name, address: target.address, verifierUrl },
+    'verify: invoking forge',
+  );
   const res = spawnSync('forge', args, { cwd: CONTRACTS_DIR, stdio: 'inherit' });
   return res.status === 0;
 }
