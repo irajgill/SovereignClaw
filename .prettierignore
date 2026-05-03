@@ -14,3 +14,7 @@ packages/studio/test/__snapshots__
 # Source `.ts` lives next to them and IS formatted; emitted JS/d.ts isn't.
 packages/studio/lib/*.js
 packages/studio/lib/*.d.ts
+# Static demo HTML — third-party fixture (Netlify demo), don't reformat.
+packages/studio/public/index.html
+# Demo script narration — keep author's prose formatting intact.
+docs/demo-script.md

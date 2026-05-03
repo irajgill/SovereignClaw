@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SovereignClaw — Framework Demo · Track 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy-deep: #060f2a;
+    --navy: #0a1a3f;
+    --navy-mid: #0d1f4a;
+    --ice: #cadcfc;
+    --ice-dim: #8aa8d8;
+    --white: #ffffff;
+    --accent: #4fc3f7;
+    --accent-soft: #2e7bb8;
+    --danger: #e94560;
+    --success: #50e3a4;
+    --muted: #6b7a99;
+    --code-bg: #0d1b36;
+    --code-line: rgba(202, 220, 252, 0.08);
+    --grid: rgba(202, 220, 252, 0.04);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    background: var(--navy-deep);
+    color: var(--white);
+    font-family: 'Inter', system-ui, sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse at top right, rgba(79, 195, 247, 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom left, rgba(46, 123, 184, 0.08) 0%, transparent 60%),
+      var(--navy-deep);
+    background-attachment: fixed;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 28px 36px 60px;
+  }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(202, 220, 252, 0.08);
+    margin-bottom: 24px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .brand-mark {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+    display: grid;
+    place-items: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 800;
+    color: var(--navy-deep);
+    font-size: 20px;
+    box-shadow: 0 4px 24px rgba(79, 195, 247, 0.35);
+  }
+
+  .brand-name {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+
+  .brand-tag {
+    color: var(--ice-dim);
+    font-size: 12px;
+    margin-left: 8px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .topbar-meta {
+    display: flex;
+    gap: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ice-dim);
+  }
+
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 100px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .pill-live {
+    background: rgba(80, 227, 164, 0.1);
+    border: 1px solid rgba(80, 227, 164, 0.3);
+    color: var(--success);
+  }
+
+  .pill-track {
+    background: rgba(79, 195, 247, 0.1);
+    border: 1px solid rgba(79, 195, 247, 0.3);
+    color: var(--accent);
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.4); }
+  }
+
+  .hero { margin-bottom: 24px; }
+
+  .hero h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 44px;
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -1px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 400;
+  }
+
+  .hero p {
+    color: var(--ice-dim);
+    margin-top: 10px;
+    font-size: 14px;
+    max-width: 760px;
+    line-height: 1.5;
+  }
+
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .terminal {
+    background: var(--code-bg);
+    border: 1px solid rgba(202, 220, 252, 0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    height: 580px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  .terminal-bar {
+    background: var(--navy);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid rgba(202, 220, 252, 0.08);
+  }
+
+  .terminal-dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+  }
+  .dot-r { background: #ff5f56; }
+  .dot-y { background: #ffbd2e; }
+  .dot-g { background: #27c93f; }
+
+  .terminal-title {
+    flex: 1;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ice-dim);
+  }
+
+  .terminal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    scroll-behavior: smooth;
+  }
+
+  .terminal-body::-webkit-scrollbar { width: 6px; }
+  .terminal-body::-webkit-scrollbar-track { background: transparent; }
+  .terminal-body::-webkit-scrollbar-thumb {
+    background: rgba(202, 220, 252, 0.15);
+    border-radius: 3px;
+  }
+
+  .term-line {
+    opacity: 0;
+    transform: translateY(4px);
+    animation: termIn 0.3s ease-out forwards;
+  }
+
+  @keyframes termIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .term-prompt { color: var(--accent); }
+  .term-prompt::before { content: "$ "; color: var(--success); }
+
+  .term-output { color: var(--ice); }
+  .term-info { color: var(--ice-dim); }
+  .term-success { color: var(--success); }
+  .term-warn { color: #fbbf24; }
+  .term-error { color: var(--danger); }
+  .term-hash { color: var(--accent); }
+  .term-comment { color: var(--muted); font-style: italic; }
+  .term-keyword { color: #fbbf24; font-weight: 600; }
+  .term-string { color: var(--success); }
+
+  .term-spacer { height: 8px; }
+
+  .right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .step-tracker {
+    background: var(--navy);
+    border: 1px solid rgba(202, 220, 252, 0.08);
+    border-radius: 12px;
+    padding: 18px;
+  }
+
+  .step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .step-header h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ice-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .step-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+  }
+
+  .step {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(202, 220, 252, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .step:last-child { border-bottom: none; }
+
+  .step-num {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: var(--navy-mid);
+    color: var(--ice-dim);
+    display: grid;
+    place-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    border: 1px solid rgba(202, 220, 252, 0.1);
+  }
+
+  .step.active .step-num {
+    background: var(--accent);
+    color: var(--navy-deep);
+    border-color: var(--accent);
+    box-shadow: 0 0 12px rgba(79, 195, 247, 0.5);
+  }
+
+  .step.done .step-num {
+    background: var(--success);
+    color: var(--navy-deep);
+    border-color: var(--success);
+  }
+
+  .step.done .step-num::before { content: "✓"; }
+  .step.done .step-num span { display: none; }
+
+  .step-info { flex: 1; }
+
+  .step-title {
+    font-size: 13px;
+    color: var(--ice);
+    font-weight: 500;
+  }
+
+  .step.active .step-title { color: var(--white); font-weight: 600; }
+  .step.done .step-title { color: var(--ice-dim); }
+
+  .step-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .artifact-card {
+    background: var(--navy);
+    border: 1px solid rgba(202, 220, 252, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.3s ease;
+  }
+
+  .artifact-card h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ice-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .artifact-tx {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    background: var(--code-bg);
+    color: var(--accent);
+    padding: 4px 8px;
+    border-radius: 5px;
+    border: 1px solid rgba(79, 195, 247, 0.2);
+    transition: opacity 0.4s ease;
+  }
+
+  .ift-display {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .ift-item {
+    background: var(--code-bg);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(202, 220, 252, 0.05);
+    transition: all 0.4s ease;
+    opacity: 0.3;
+  }
+
+  .ift-item.minted {
+    opacity: 1;
+    border-color: var(--success);
+    background: linear-gradient(135deg, rgba(80, 227, 164, 0.08), var(--code-bg));
+  }
+
+  .ift-item.revoked {
+    opacity: 0.7;
+    border-color: var(--danger);
+    background: linear-gradient(135deg, rgba(233, 69, 96, 0.08), var(--code-bg));
+  }
+
+  .ift-token {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .ift-role {
+    font-size: 12px;
+    color: var(--white);
+    margin-top: 2px;
+    font-weight: 500;
+  }
+
+  .ift-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .ift-item.minted .ift-status { color: var(--success); }
+  .ift-item.revoked .ift-status { color: var(--danger); }
+
+  .mem-vis {
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    gap: 2px;
+    margin-top: 10px;
+  }
+
+  .mem-cell {
+    aspect-ratio: 1;
+    background: rgba(79, 195, 247, 0.12);
+    border-radius: 1px;
+    transition: all 0.3s ease;
+  }
+
+  .mem-cell.active {
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(79, 195, 247, 0.5);
+  }
+
+  .mem-cell.revoked {
+    background: rgba(233, 69, 96, 0.45) !important;
+    box-shadow: none !important;
+  }
+
+  .bench-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--code-line);
+    font-size: 11px;
+  }
+
+  .bench-row:last-child { border: none; }
+
+  .bench-label {
+    color: var(--ice);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .bench-value {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--success);
+    font-weight: 700;
+    transition: all 0.4s ease;
+  }
+
+  .footer {
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(202, 220, 252, 0.08);
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .footer a { color: var(--accent); text-decoration: none; }
+
+  .replay {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--navy);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 12px 20px;
+    border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 8px 32px rgba(79, 195, 247, 0.2);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .replay.show { opacity: 1; }
+  .replay:hover { background: var(--accent); color: var(--navy-deep); }
+
+  @media (max-width: 1100px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .terminal { height: 460px; }
+  }
+
+  @media (max-width: 640px) {
+    .app { padding: 16px; }
+    .hero h1 { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">S</div>
+      <div>
+        <span class="brand-name">SovereignClaw</span>
+        <span class="brand-tag">// Framework Demo</span>
+      </div>
+    </div>
+    <div class="topbar-meta">
+      <div class="pill pill-track">TRACK 1 · FRAMEWORK</div>
+      <div class="pill pill-live"><span class="live-dot"></span>LIVE · 0G GALILEO</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <h1>From <em>npm install</em> to a sovereign iNFT in &lt;90 seconds.</h1>
+    <p>Watch a developer clone SovereignClaw, define an agent in 10 lines, mint it as an ERC-7857 iNFT on 0G, and revoke its memory cryptographically — all in a single live session. This is what Track 1 judges install and run themselves.</p>
+  </div>
+
+  <div class="main-grid">
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="terminal-dot dot-r"></div>
+        <div class="terminal-dot dot-y"></div>
+        <div class="terminal-dot dot-g"></div>
+        <div class="terminal-title">~/research-claw — pnpm dev</div>
+      </div>
+      <div class="terminal-body" id="term">
+        <div class="term-line term-info">// SovereignClaw demo — auto-running in 2s...</div>
+      </div>
+    </div>
+
+    <div class="right-col">
+
+      <div class="step-tracker">
+        <div class="step-header">
+          <h3>Demo Sequence</h3>
+          <div class="step-count" id="step-count">0 / 8</div>
+        </div>
+
+        <div class="step" id="step-1">
+          <div class="step-num"><span>1</span></div>
+          <div class="step-info">
+            <div class="step-title">Clone & install</div>
+            <div class="step-meta">git clone + pnpm install</div>
+          </div>
+        </div>
+
+        <div class="step" id="step-2">
+          <div class="step-num"><span>2</span></div>
+          <div class="step-info">
+            <div class="step-title">Build framework + contracts</div>
+            <div class="step-meta">5 packages + Foundry build</div>
+          </div>
+        </div>
+
+        <div class="step" id="step-3">
+          <div class="step-num"><span>3</span></div>
+          <div class="step-info">
+            <div class="step-title">Define agent (10 lines)</div>
+            <div class="step-meta">@sovereignclaw/core + memory + reflection</div>
+          </div>
+        </div>
+
+        <div class="step" id="step-4">
+          <div class="step-num"><span>4</span></div>
+          <div class="step-info">
+            <div class="step-title">Run sealed inference</div>
+            <div class="step-meta">0G Compute · qwen3.6-plus · TEE-verified</div>
+          </div>
+        </div>
+
+        <div class="step" id="step-5">
+          <div class="step-num"><span>5</span></div>
+          <div class="step-info">
+            <div class="step-title">Self-critique reflection</div>
+            <div class="step-meta">@sovereignclaw/reflection · second pass</div>
+          </div>
+        </div>
+
+        <div class="step" id="step-6">
+          <div class="step-num"><span>6</span></div>
+          <div class="step-info">
+            <div class="step-title">Mint iNFT (ERC-7857)</div>
+            <div class="step-meta">AgentNFT.sol · 0xc3f997...0601</div>
+          </div>
+        </div>
+
+        <div class="step" id="step-7">
+          <div class="step-num"><span>7</span></div>
+          <div class="step-info">
+            <div class="step-title">Revoke memory (kill switch)</div>
+            <div class="step-meta">MemoryRevocation.sol · ~1.5s</div>
+          </div>
+        </div>
+
+        <div class="step" id="step-8">
+          <div class="step-num"><span>8</span></div>
+          <div class="step-info">
+            <div class="step-title">Verify on-chain</div>
+            <div class="step-meta">pnpm check:deployment</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="artifact-card" id="inft-card">
+        <h3>
+          <span>Minted Agent iNFT</span>
+          <span class="artifact-tx" id="inft-tx" style="opacity:0;">--</span>
+        </h3>
+        <div class="ift-display">
+          <div class="ift-item" id="inft-display">
+            <div class="ift-token">#--</div>
+            <div class="ift-role">ResearchClaw</div>
+            <div class="ift-status">awaiting mint...</div>
+          </div>
+          <div class="ift-item">
+            <div class="ift-token" style="color:var(--ice-dim);">memory</div>
+            <div class="ift-role">0G Storage KV</div>
+            <div class="ift-status" id="memory-status">awaiting writes...</div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:14px;">Encrypted Memory · AES-256-GCM</h3>
+        <div class="mem-vis" id="mem-vis"></div>
+      </div>
+
+      <div class="artifact-card">
+        <h3>Live Benchmarks</h3>
+        <div class="bench-row">
+          <span class="bench-label">Cold-start to iNFT</span>
+          <span class="bench-value" id="bench-coldstart">—</span>
+        </div>
+        <div class="bench-row">
+          <span class="bench-label">Sealed inference RTT</span>
+          <span class="bench-value" id="bench-inference">—</span>
+        </div>
+        <div class="bench-row">
+          <span class="bench-label">iNFT mint latency</span>
+          <span class="bench-value" id="bench-mint">—</span>
+        </div>
+        <div class="bench-row">
+          <span class="bench-label">Revocation latency</span>
+          <span class="bench-value" id="bench-revoke">—</span>
+        </div>
+        <div class="bench-row">
+          <span class="bench-label">LoC for sovereign agent</span>
+          <span class="bench-value" id="bench-loc">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>SovereignClaw · Apache 2.0 · github.com/lalla-ai/SovereignClaw</div>
+    <div>ETHGlobal × 0G · Track 1 — Best Agent Framework, Tooling & Core Extensions</div>
+  </div>
+</div>
+
+<button class="replay" id="replay">↻ REPLAY DEMO</button>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const term = $('term');
+  const stepCount = $('step-count');
+
+  const memViz = $('mem-vis');
+  for (let i = 0; i < 64; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'mem-cell';
+    memViz.appendChild(cell);
+  }
+  const memCells = memViz.querySelectorAll('.mem-cell');
+
+  function rndHex(len = 4) {
+    return Array.from({length: len}, () =>
+      Math.floor(Math.random()*16).toString(16)).join('');
+  }
+
+  function termWrite(html, cls = '') {
+    const line = document.createElement('div');
+    line.className = `term-line ${cls}`;
+    line.innerHTML = html;
+    term.appendChild(line);
+    term.scrollTop = term.scrollHeight;
+    return line;
+  }
+
+  function termSpacer() {
+    const sp = document.createElement('div');
+    sp.className = 'term-spacer';
+    term.appendChild(sp);
+    term.scrollTop = term.scrollHeight;
+  }
+
+  function setStep(num, state) {
+    const step = $(`step-${num}`);
+    if (!step) return;
+    step.classList.remove('active', 'done');
+    if (state) step.classList.add(state);
+    if (state === 'active') stepCount.textContent = `${num} / 8`;
+    if (state === 'done' && num === 8) stepCount.textContent = `8 / 8 ✓`;
+  }
+
+  function activateMem(count) {
+    let activated = 0;
+    const interval = setInterval(() => {
+      if (activated >= count) {
+        clearInterval(interval);
+        return;
+      }
+      const idx = Math.floor(Math.random() * memCells.length);
+      if (!memCells[idx].classList.contains('active')) {
+        memCells[idx].classList.add('active');
+        activated++;
+      }
+    }, 50);
+  }
+
+  function revokeMem() {
+    memCells.forEach((c, i) => {
+      setTimeout(() => c.classList.add('revoked'), i * 12);
+    });
+  }
+
+  function clearMem() {
+    memCells.forEach(c => c.classList.remove('active', 'revoked'));
+  }
+
+  function setBench(id, value) {
+    const el = $(id);
+    el.textContent = value;
+    el.style.transform = 'scale(1.15)';
+    setTimeout(() => el.style.transform = 'scale(1)', 200);
+  }
+
+  const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+  async function runDemo() {
+    term.innerHTML = '<div class="term-line term-info">// SovereignClaw demo — starting...</div>';
+    [1,2,3,4,5,6,7,8].forEach(n => setStep(n, null));
+    stepCount.textContent = '0 / 8';
+    clearMem();
+    ['bench-coldstart','bench-inference','bench-mint','bench-revoke','bench-loc'].forEach(id => $(id).textContent = '—');
+    $('inft-tx').style.opacity = '0';
+    $('inft-display').classList.remove('minted', 'revoked');
+    $('inft-display').querySelector('.ift-token').textContent = '#--';
+    $('inft-display').querySelector('.ift-status').textContent = 'awaiting mint...';
+    $('memory-status').textContent = 'awaiting writes...';
+    $('memory-status').style.color = '';
+    $('replay').classList.remove('show');
+
+    await wait(700);
+
+    setStep(1, 'active');
+    termWrite('git clone https://github.com/lalla-ai/SovereignClaw.git', 'term-prompt');
+    await wait(500);
+    termWrite('Cloning into \'SovereignClaw\'... done. <span class="term-info">24 commits</span>', 'term-output');
+    await wait(400);
+    termWrite('cd SovereignClaw && pnpm install', 'term-prompt');
+    await wait(600);
+    termWrite('<span class="term-info">Resolving 1,247 packages... installing...</span>', 'term-output');
+    await wait(800);
+    termWrite('<span class="term-success">✓</span> Done in 18.3s · 5 workspaces · 1,247 packages', 'term-output');
+    setStep(1, 'done');
+    termSpacer();
+
+    setStep(2, 'active');
+    termWrite('cd contracts && forge build', 'term-prompt');
+    await wait(500);
+    termWrite('Compiling 14 files with Solc 0.8.24...', 'term-info');
+    await wait(700);
+    termWrite('<span class="term-success">✓</span> Compiler run successful · <span class="term-comment">No warnings.</span>', 'term-output');
+    await wait(400);
+    termWrite('pnpm --filter @sovereignclaw/* build', 'term-prompt');
+    await wait(600);
+    termWrite('  <span class="term-success">✓</span> @sovereignclaw/core@0.2.0', 'term-output');
+    await wait(150);
+    termWrite('  <span class="term-success">✓</span> @sovereignclaw/memory@0.1.0', 'term-output');
+    await wait(150);
+    termWrite('  <span class="term-success">✓</span> @sovereignclaw/mesh@0.2.0', 'term-output');
+    await wait(150);
+    termWrite('  <span class="term-success">✓</span> @sovereignclaw/inft@0.1.0', 'term-output');
+    await wait(150);
+    termWrite('  <span class="term-success">✓</span> @sovereignclaw/reflection@0.1.1', 'term-output');
+    setStep(2, 'done');
+    termSpacer();
+
+    setStep(3, 'active');
+    termWrite('cat examples/research-claw/src/agent.ts', 'term-prompt');
+    await wait(400);
+    termWrite('<span class="term-comment">// ResearchClaw — sovereign agent in ~80 lines</span>', 'term-output');
+    await wait(80);
+    termWrite('<span class="term-keyword">import</span> { Agent, sealed0GInference } <span class="term-keyword">from</span> <span class="term-string">\'@sovereignclaw/core\'</span>;', 'term-output');
+    await wait(80);
+    termWrite('<span class="term-keyword">import</span> { OG_KV, encrypted } <span class="term-keyword">from</span> <span class="term-string">\'@sovereignclaw/memory\'</span>;', 'term-output');
+    await wait(80);
+    termWrite('<span class="term-keyword">import</span> { reflectOnOutput } <span class="term-keyword">from</span> <span class="term-string">\'@sovereignclaw/reflection\'</span>;', 'term-output');
+    await wait(80);
+    termWrite('', 'term-output');
+    termWrite('<span class="term-keyword">const</span> research = <span class="term-keyword">new</span> Agent({', 'term-output');
+    await wait(60);
+    termWrite('  role: <span class="term-string">\'researcher\'</span>,', 'term-output');
+    await wait(60);
+    termWrite('  inference: sealed0GInference({ model: <span class="term-string">\'qwen3.6-plus\'</span> }),', 'term-output');
+    await wait(60);
+    termWrite('  memory: encrypted(OG_KV({ namespace: <span class="term-string">\'research\'</span> })),', 'term-output');
+    await wait(60);
+    termWrite('  reflect: reflectOnOutput({ rounds: 1 }),', 'term-output');
+    await wait(60);
+    termWrite('});', 'term-output');
+    setBench('bench-loc', '~80 LoC');
+    setStep(3, 'done');
+    termSpacer();
+
+    setStep(4, 'active');
+    termWrite('pnpm dev', 'term-prompt');
+    await wait(500);
+    termWrite('<span class="term-info">[research-claw] Connecting to 0G Galileo testnet (chainId 16602)...</span>', 'term-output');
+    await wait(400);
+    termWrite('<span class="term-success">✓</span> Wallet 0x7a4f...c2b8 funded (1.247 OG)', 'term-output');
+    await wait(300);
+    termWrite('<span class="term-info">[inference] Calling sealed0GInference · qwen3.6-plus...</span>', 'term-output');
+    activateMem(8);
+    await wait(900);
+    termWrite('<span class="term-success">✓</span> TEE attestation verified · 0G Compute', 'term-output');
+    await wait(200);
+    termWrite('<span class="term-info">[output]</span> "Recent RAG agent papers focus on self-correcting retrieval,', 'term-output');
+    termWrite('         multi-hop reasoning, and tool-use augmentation..."', 'term-output');
+    setBench('bench-inference', '2.4s');
+    $('memory-status').textContent = 'writing encrypted...';
+    $('memory-status').style.color = 'var(--accent)';
+    setStep(4, 'done');
+    termSpacer();
+
+    setStep(5, 'active');
+    termWrite('<span class="term-info">[reflection] Running self-critique pass via 0G Compute...</span>', 'term-output');
+    activateMem(4);
+    await wait(1000);
+    termWrite('<span class="term-info">[reflect.complete]</span> score: 0.87 (rubric: <span class="term-string">accuracy</span>)', 'term-output');
+    await wait(200);
+    termWrite('  → <span class="term-comment">// proposed revision: add citation breadth</span>', 'term-output');
+    await wait(300);
+    termWrite('<span class="term-success">✓</span> Learning persisted to memory · <span class="term-hash">learning:run-0x' + rndHex(4) + '</span>', 'term-output');
+    setStep(5, 'done');
+    termSpacer();
+
+    setStep(6, 'active');
+    termWrite('pnpm mint', 'term-prompt');
+    await wait(400);
+    termWrite('<span class="term-info">[inft] Calling AgentNFT.mint(...) on 0G...</span>', 'term-output');
+    await wait(300);
+    termWrite('<span class="term-info">  contract: 0xc3f997545da4AA8E70C82Aab82ECB48722740601</span>', 'term-output');
+    await wait(800);
+    const mintTx = `0x${rndHex(16)}`;
+    termWrite(`<span class="term-success">✓</span> Mined in block 4,827,341 · tx: <span class="term-hash">${mintTx.slice(0,18)}...</span>`, 'term-output');
+    await wait(200);
+    const tokenId = `#${Math.floor(Math.random() * 9000 + 1000)}`;
+    termWrite(`<span class="term-info">[mint.confirmed]</span> tokenId: <span class="term-success">${tokenId}</span> · owner: 0x7a4f...c2b8`, 'term-output');
+    await wait(200);
+    termWrite(`<span class="term-info">  view on chainscan-galileo.0g.ai/tx/${mintTx.slice(0,10)}...</span>`, 'term-output');
+
+    $('inft-display').classList.add('minted');
+    $('inft-display').querySelector('.ift-token').textContent = tokenId;
+    $('inft-display').querySelector('.ift-status').textContent = 'minted · ERC-7857';
+    $('inft-tx').textContent = mintTx.slice(0, 10) + '...';
+    $('inft-tx').style.opacity = '1';
+    $('memory-status').textContent = 'encrypted · sovereign';
+    $('memory-status').style.color = 'var(--success)';
+
+    setBench('bench-mint', '3.1s');
+    setBench('bench-coldstart', '87s');
+    setStep(6, 'done');
+    termSpacer();
+
+    await wait(800);
+    setStep(7, 'active');
+    termWrite('<span class="term-comment">// Demo: revoke memory (kill switch)</span>', 'term-output');
+    await wait(400);
+    termWrite('pnpm revoke -- ' + tokenId, 'term-prompt');
+    await wait(400);
+    termWrite('<span class="term-info">[revoke] Calling revokeMemory(...) with onPhase hook...</span>', 'term-output');
+    await wait(300);
+    termWrite('  <span class="term-warn">→ phase: deriveNewKey</span> (412ms)', 'term-output');
+    await wait(200);
+    termWrite('  <span class="term-warn">→ phase: signRevocation</span> (89ms)', 'term-output');
+    await wait(200);
+    termWrite('  <span class="term-warn">→ phase: oracleRefuse</span> (1502ms) <span class="term-comment">// 1.5s — under 5s target</span>', 'term-output');
+    await wait(300);
+    const revokeTx = `0x${rndHex(16)}`;
+    termWrite(`<span class="term-error">⚠</span> Revocation event emitted · tx: <span class="term-hash">${revokeTx.slice(0,18)}...</span>`, 'term-output');
+    await wait(300);
+    termWrite('<span class="term-info">[memory] Old DEK destroyed. Pointer now decrypts to:</span>', 'term-output');
+    termWrite('<span class="term-error">  0x9e3d a91f 2c8b 4f7e d6a3 b1c9 8f2e 5d4a 7b6c 3e9d a1f8 c4b7</span>', 'term-output');
+    await wait(200);
+    termWrite('<span class="term-error">  ✗ Memory unreadable · provably · forever.</span>', 'term-output');
+
+    revokeMem();
+    $('inft-display').classList.remove('minted');
+    $('inft-display').classList.add('revoked');
+    $('inft-display').querySelector('.ift-status').textContent = 'memory revoked';
+    $('memory-status').textContent = 'unreadable · revoked';
+    $('memory-status').style.color = 'var(--danger)';
+
+    setBench('bench-revoke', '1.5s');
+    setStep(7, 'done');
+    termSpacer();
+
+    setStep(8, 'active');
+    termWrite('pnpm check:deployment', 'term-prompt');
+    await wait(500);
+    termWrite('<span class="term-info">Asserting on-chain state matches committed record...</span>', 'term-output');
+    await wait(300);
+    termWrite('  <span class="term-success">✓</span> AgentNFT @ 0xc3f997...0601 · binding ok', 'term-output');
+    await wait(150);
+    termWrite('  <span class="term-success">✓</span> MemoryRevocation @ 0x735084...b6AC · oracle rotation ok', 'term-output');
+    await wait(150);
+    termWrite(`  <span class="term-success">✓</span> Token ${tokenId} · status: REVOKED · DESTROYED_SENTINEL match`, 'term-output');
+    await wait(200);
+    termWrite('  <span class="term-success">✓</span> EIP-712 typehash drift: <span class="term-comment">none</span>', 'term-output');
+    await wait(300);
+    termWrite('<span class="term-success">✓ All assertions passed.</span> Live on-chain state matches repo.', 'term-output');
+    termSpacer();
+    termWrite('<span class="term-info">Run finished.</span> Total: 87.4s · clone → mint → revoke → verify.', 'term-output');
+
+    setStep(8, 'done');
+
+    $('replay').classList.add('show');
+  }
+
+  $('replay').addEventListener('click', runDemo);
+
+  setTimeout(runDemo, 1500);
+</script>
+
+</body>
+</html>

@@ -72,16 +72,10 @@ async function forward(
   return out;
 }
 
-export async function GET(
-  req: Request,
-  ctx: { params: { path: string[] } },
-): Promise<Response> {
+export async function GET(req: Request, ctx: { params: { path: string[] } }): Promise<Response> {
   return forward(req, ctx.params.path, 'GET');
 }
 
-export async function POST(
-  req: Request,
-  ctx: { params: { path: string[] } },
-): Promise<Response> {
+export async function POST(req: Request, ctx: { params: { path: string[] } }): Promise<Response> {
   return forward(req, ctx.params.path, 'POST');
 }
