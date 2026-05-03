@@ -38,6 +38,10 @@
     "benchmark:revoke-latency": "tsx scripts/benchmark-revoke-latency.ts",
     "benchmark:mesh-throughput": "tsx scripts/benchmark-mesh-throughput.ts",
     "smoke:studio": "tsx scripts/smoke-studio-deploy.ts",
+    "docs:dev": "pnpm --filter @sovereignclaw/docs dev",
+    "docs:build": "pnpm --filter @sovereignclaw/docs build",
+    "studio:dev": "pnpm --filter @sovereignclaw/studio dev",
+    "studio:build": "pnpm --filter @sovereignclaw/studio build",
     "changeset": "changeset",
     "version-packages": "changeset version"
   },

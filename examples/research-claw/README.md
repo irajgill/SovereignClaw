@@ -18,7 +18,7 @@ a working agent in under 10 minutes — no monorepo build cycle, no
 3. Builds an `Agent` with a researcher system prompt and the Router-backed
    `sealed0GInference` adapter (`verify_tee: true`).
 4. Adds `reflectOnOutput({ rubric: 'accuracy', rounds: 1, persistLearnings:
-   true })` so a self-critique pass scores every run and persists a
+true })` so a self-critique pass scores every run and persists a
    `learning:<runId>` record to history. Subsequent runs auto-load recent
    learnings into context.
 5. Runs the agent on a research question. Prints the TEE attestation,
@@ -74,16 +74,16 @@ flow `pnpm --filter ... dev` resolves against the example's own
 
 ## Required env
 
-| Var | Where to get it |
-|---|---|
-| `PRIVATE_KEY` | Any 0G Galileo testnet wallet. Fund at https://faucet.0g.ai (0.1 0G/day). |
-| `RPC_URL` | `https://evmrpc-testnet.0g.ai` |
-| `INDEXER_URL` | `https://indexer-storage-testnet-turbo.0g.ai` |
-| `EXPLORER_URL` | `https://chainscan-galileo.0g.ai` |
-| `COMPUTE_ROUTER_BASE_URL` | `https://router-api-testnet.integratenetwork.work/v1` |
-| `COMPUTE_ROUTER_API_KEY` | Issue at https://pc.testnet.0g.ai (separate Router balance, deposit testnet 0G first). |
-| `COMPUTE_MODEL` (opt) | Defaults to `qwen/qwen-2.5-7b-instruct`. |
-| `KEK_NAMESPACE` (opt) | Logical key derivation namespace; defaults to `research-claw-v1`. |
+| Var                       | Where to get it                                                                        |
+| ------------------------- | -------------------------------------------------------------------------------------- |
+| `PRIVATE_KEY`             | Any 0G Galileo testnet wallet. Fund at https://faucet.0g.ai (0.1 0G/day).              |
+| `RPC_URL`                 | `https://evmrpc-testnet.0g.ai`                                                         |
+| `INDEXER_URL`             | `https://indexer-storage-testnet-turbo.0g.ai`                                          |
+| `EXPLORER_URL`            | `https://chainscan-galileo.0g.ai`                                                      |
+| `COMPUTE_ROUTER_BASE_URL` | `https://router-api-testnet.integratenetwork.work/v1`                                  |
+| `COMPUTE_ROUTER_API_KEY`  | Issue at https://pc.testnet.0g.ai (separate Router balance, deposit testnet 0G first). |
+| `COMPUTE_MODEL` (opt)     | Defaults to `qwen/qwen-2.5-7b-instruct`.                                               |
+| `KEK_NAMESPACE` (opt)     | Logical key derivation namespace; defaults to `research-claw-v1`.                      |
 
 The bundled `.env.example` enumerates all of these.
 
@@ -132,13 +132,13 @@ works.
 
 ## Costs (measured)
 
-| Step | Approx 0G burned |
-|---|---|
-| Manifest write to 0G Storage | ~0.000123 0G |
-| Inference (Router billing) | varies by model; qwen-2.5-7b ≈ 0.000002 0G/run |
-| Reflection (second inference) | same as above |
-| iNFT mint | ~0.0008 0G |
-| **Total per run** | **~0.001 0G** |
+| Step                          | Approx 0G burned                               |
+| ----------------------------- | ---------------------------------------------- |
+| Manifest write to 0G Storage  | ~0.000123 0G                                   |
+| Inference (Router billing)    | varies by model; qwen-2.5-7b ≈ 0.000002 0G/run |
+| Reflection (second inference) | same as above                                  |
+| iNFT mint                     | ~0.0008 0G                                     |
+| **Total per run**             | **~0.001 0G**                                  |
 
 The faucet allowance (0.1 0G/day) covers ~100 full runs per wallet.
 
@@ -146,7 +146,8 @@ The faucet allowance (0.1 0G/day) covers ~100 full runs per wallet.
 
 The Compute Router uses a **separate** balance funded via
 `https://pc.testnet.0g.ai`. A wallet with faucet funds is enough for storage
-+ chain gas, but inference calls will return HTTP 402 until you also deposit
-into the Router. The inference adapter throws `RouterBalanceError` with the
-deposit URL hint when this happens. Fund both balances once and you're good
-for the day.
+
+- chain gas, but inference calls will return HTTP 402 until you also deposit
+  into the Router. The inference adapter throws `RouterBalanceError` with the
+  deposit URL hint when this happens. Fund both balances once and you're good
+  for the day.

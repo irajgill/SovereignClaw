@@ -7,5 +7,6 @@ contracts/cache
 contracts/lib
 pnpm-lock.yaml
 .next
+out
+apps/docs/content/synced
 packages/studio/test/__snapshots__
-

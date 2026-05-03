@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "pnpm install --frozen-lockfile=false",
+  "buildCommand": "cd apps/docs && pnpm sync-content && pnpm build",
+  "outputDirectory": "apps/docs/out",
+  "cleanUrls": true,
+  "trailingSlash": false
+}

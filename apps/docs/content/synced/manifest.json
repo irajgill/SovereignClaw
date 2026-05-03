@@ -1,0 +1,17 @@
+{
+  "generatedAt": "2026-05-03T12:52:04.537Z",
+  "sources": [
+    "docs/architecture.md",
+    "docs/benchmarks.md",
+    "docs/quickstart.md",
+    "docs/security.md",
+    "docs/streaming.md",
+    "packages/core/README.md",
+    "packages/memory/README.md",
+    "packages/mesh/README.md",
+    "packages/inft/README.md",
+    "packages/reflection/README.md"
+  ],
+  "copied": 10,
+  "missing": 0
+}

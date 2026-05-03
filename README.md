@@ -15,18 +15,30 @@ Sovereign-memory, multi-agent, iNFT-native agent framework for 0G.
 > benchmark. See [docs/dev-log.md](docs/dev-log.md) for the full Phase 9
 > entry and [docs/benchmarks.md](docs/benchmarks.md) for fresh numbers.
 >
-> **Phase 10 (minimal):** packages published to npm at v0.1.0; dev oracle
-> live on Railway. See Production Endpoints below.
+> **Phase 10 (minimal):** packages published to npm at v0.1.0/v0.2.0; dev
+> oracle and Studio backend live on Railway; docs site and ClawStudio live
+> on Vercel. See Production Endpoints below.
+>
+> **Phase B (additive, May 2026):** `@sovereignclaw/core@0.2.0` (streaming
+> SSE inference + per-agent typed events) and `@sovereignclaw/mesh@0.2.0`
+> (unified `MeshEvent` surface, `agent.handoff`, `agent.thinking.token`,
+> `dispatch()`) shipped to npm. See [docs/streaming.md](docs/streaming.md).
 
 ## Production Endpoints
 
-| Resource                  | Value                                                                   |
-| ------------------------- | ----------------------------------------------------------------------- |
-| npm packages              | `@sovereignclaw/{core,memory,mesh,inft,reflection}` v0.1.0              |
-| Dev oracle (production)   | `https://oracle-production-5db4.up.railway.app` (Bearer-token required) |
-| AgentNFT contract         | `0xc3f997545da4AA8E70C82Aab82ECB48722740601`                            |
-| MemoryRevocation contract | `0x735084C861E64923576D04d678bA2f89f6fbb6AC`                            |
-| Network                   | 0G Galileo Testnet (chainId 16602)                                      |
+| Resource                         | URL / value                                                                                          |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Docs site**                    | https://sovereignclaw-docs.vercel.app                                                                |
+| **ClawStudio (visual builder)**  | https://sovereignclaw-studio.vercel.app                                                              |
+| **Dev oracle + Studio backend**  | https://oracle-production-5db4.up.railway.app (Bearer auth) — `/oracle/*`, `/studio/{deploy,status}` |
+| npm: `@sovereignclaw/core`       | https://www.npmjs.com/package/@sovereignclaw/core (v0.2.0)                                           |
+| npm: `@sovereignclaw/memory`     | https://www.npmjs.com/package/@sovereignclaw/memory (v0.1.0)                                         |
+| npm: `@sovereignclaw/mesh`       | https://www.npmjs.com/package/@sovereignclaw/mesh (v0.2.0)                                           |
+| npm: `@sovereignclaw/inft`       | https://www.npmjs.com/package/@sovereignclaw/inft (v0.1.0)                                           |
+| npm: `@sovereignclaw/reflection` | https://www.npmjs.com/package/@sovereignclaw/reflection (v0.1.1)                                     |
+| AgentNFT contract                | [`0xc3f99…0601`](https://chainscan-galileo.0g.ai/address/0xc3f997545da4AA8E70C82Aab82ECB48722740601) |
+| MemoryRevocation contract        | [`0x73508…b6AC`](https://chainscan-galileo.0g.ai/address/0x735084C861E64923576D04d678bA2f89f6fbb6AC) |
+| Network                          | 0G Galileo Testnet (chainId 16602)                                                                   |
 
 **Quick install:**
 
@@ -50,6 +62,24 @@ for a token if you need oracle access for a downstream project. The full
 production deployment record — Railway service ID, smoke-test tx hashes,
 post-revoke assertions — lives in
 [`deployments/oracle-prod.json`](deployments/oracle-prod.json).
+
+**ResearchClaw — the ~120-line example** lives at
+[`examples/research-claw/`](examples/research-claw/). Copy that directory
+anywhere on disk, fill `.env`, run `pnpm install && pnpm dev`. Verified
+clone-to-iNFT under 10 minutes.
+
+**ClawStudio — visual builder** at
+[https://sovereignclaw-studio.vercel.app](https://sovereignclaw-studio.vercel.app).
+Drag-and-drop graph → SovereignClaw code → one-click deploy via the Studio
+backend on Railway. The graph generated for ResearchClaw produces source
+byte-equivalent to the example file (snapshot-tested in
+`packages/studio/test/codegen.test.ts`).
+
+**IncomeClaw — the 5-agent reference build** is the production consumer of
+this framework. Track 2 submission, separate repo. Pinned versions:
+`@sovereignclaw/core@0.2.0`, `@sovereignclaw/mesh@0.2.0`,
+`@sovereignclaw/inft@0.1.0`, `@sovereignclaw/memory@0.1.0`,
+`@sovereignclaw/reflection@0.1.1`.
 
 ## Deployed addresses (0G Galileo Testnet, chainId `16602`)
 

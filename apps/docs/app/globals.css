@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #0b0d10;
+  color: #e6e9ee;
+  font-family: ui-sans-serif, system-ui, sans-serif, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+}
+
+pre,
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+pre {
+  background: #0d1117;
+  border: 1px solid #222831;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+code:not(pre code) {
+  background: #161b22;
+  border: 1px solid #222831;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.92em;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.95em;
+}
+th,
+td {
+  border-bottom: 1px solid #222831;
+  text-align: left;
+  padding: 8px 10px;
+  vertical-align: top;
+}
+th {
+  color: #9aa3ad;
+  font-weight: 500;
+}
+
+.prose {
+  max-width: 760px;
+  line-height: 1.65;
+}
+.prose h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 1.4em 0 0.8em;
+  letter-spacing: -0.01em;
+}
+.prose h2 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 1.6em 0 0.6em;
+  letter-spacing: -0.005em;
+}
+.prose h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 1.4em 0 0.5em;
+}
+.prose p,
+.prose li {
+  color: #c8cfd6;
+}
+.prose a {
+  color: #a48bff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose ul,
+.prose ol {
+  margin: 0.5em 0;
+  padding-left: 1.4em;
+}
+.prose hr {
+  border: none;
+  border-top: 1px solid #222831;
+  margin: 2em 0;
+}
