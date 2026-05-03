@@ -1,28 +1,98 @@
 # SovereignClaw
 
-Sovereign-memory, multi-agent, iNFT-native agent framework for 0G.
+> **Open-source, sovereign-memory, multi-agent, iNFT-native agent framework
+> for 0G.** Encrypted persistent memory on 0G Storage, ERC-7857 iNFT lifecycle
+> with cryptographic revocation, TEE-attested inference via 0G Compute Router,
+> a multi-agent mesh on a 0G Log bus, and a drag-and-drop visual builder that
+> generates the same code by hand. Five packages on npm, two contracts on
+> chain, two production services live.
 
-> **Status:** Phase 9 — polish + audit hardening shipped. `revokeMemory`
-> now reports per-phase timings via an `onPhase` hook; the new
-> oracle-side refuse number is **1.5 s** (vs the <5 s target). Studio
-> deploys now accept EIP-712 wallet signatures verified against
-> `STUDIO_SIGNER_ALLOWLIST` (open-mode fallback for local dev), and the
-> backend re-runs the canonical codegen on every deploy to reject
-> tampered client source before gas. Reflection nodes support custom
-> rubrics via the Inspector. `docs/security.md` has been rewritten
-> audit-grade (L1–L12 production-gap ledger, attacker-capability threat
-> model, responsible-disclosure section). CI now gates on the LoC
-> benchmark. See [docs/dev-log.md](docs/dev-log.md) for the full Phase 9
-> entry and [docs/benchmarks.md](docs/benchmarks.md) for fresh numbers.
->
-> **Phase 10 (minimal):** packages published to npm at v0.1.0/v0.2.0; dev
-> oracle and Studio backend live on Railway; docs site and ClawStudio live
-> on Vercel. See Production Endpoints below.
->
-> **Phase B (additive, May 2026):** `@sovereignclaw/core@0.2.0` (streaming
-> SSE inference + per-agent typed events) and `@sovereignclaw/mesh@0.2.0`
-> (unified `MeshEvent` surface, `agent.handoff`, `agent.thinking.token`,
-> `dispatch()`) shipped to npm. See [docs/streaming.md](docs/streaming.md).
+[![CI](https://github.com/lalla-ai/SovereignClaw/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/lalla-ai/SovereignClaw/actions/workflows/ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
+[![npm @sovereignclaw/core](https://img.shields.io/npm/v/@sovereignclaw/core?label=%40sovereignclaw%2Fcore)](https://www.npmjs.com/package/@sovereignclaw/core)
+[![npm @sovereignclaw/memory](https://img.shields.io/npm/v/@sovereignclaw/memory?label=%40sovereignclaw%2Fmemory)](https://www.npmjs.com/package/@sovereignclaw/memory)
+[![npm @sovereignclaw/inft](https://img.shields.io/npm/v/@sovereignclaw/inft?label=%40sovereignclaw%2Finft)](https://www.npmjs.com/package/@sovereignclaw/inft)
+[![npm @sovereignclaw/mesh](https://img.shields.io/npm/v/@sovereignclaw/mesh?label=%40sovereignclaw%2Fmesh)](https://www.npmjs.com/package/@sovereignclaw/mesh)
+[![npm @sovereignclaw/reflection](https://img.shields.io/npm/v/@sovereignclaw/reflection?label=%40sovereignclaw%2Freflection)](https://www.npmjs.com/package/@sovereignclaw/reflection)
+[![0G Galileo Testnet](https://img.shields.io/badge/0G-Galileo%20testnet-orange)](https://chainscan-galileo.0g.ai/)
+
+## Status
+
+**Phases 0 – 9 + 10 (minimal) shipped.** Five packages live on npm
+(`core@0.2.0`, `memory@0.1.0`, `inft@0.1.0`, `mesh@0.2.0`,
+`reflection@0.1.1`); the Studio is a Next.js app at
+[sovereignclaw-studio.vercel.app](https://sovereignclaw-studio.vercel.app);
+docs at [sovereignclaw-docs.vercel.app](https://sovereignclaw-docs.vercel.app);
+dev oracle + Studio backend on Railway; `AgentNFT` + `MemoryRevocation`
+deployed and reproducibly verified on 0G Galileo (chainId 16602). Latest
+revocation number: **1.5 s** click-to-unreadable (target was <5 s). LoC,
+inference, mesh, and revoke benchmarks live in
+[docs/benchmarks.md](docs/benchmarks.md); audit-grade trust model in
+[docs/security.md](docs/security.md); session-by-session build journal in
+[docs/dev-log.md](docs/dev-log.md).
+
+## Four snippets above the fold
+
+```bash
+# 1. Install — every package available standalone or together
+pnpm add @sovereignclaw/core @sovereignclaw/memory @sovereignclaw/inft \
+         @sovereignclaw/reflection @sovereignclaw/mesh ethers
+```
+
+```typescript
+// 2. A sovereign agent in 8 lines: encrypted memory + TEE inference + reflection
+import { Agent, sealed0GInference } from '@sovereignclaw/core';
+import { encrypted, OG_Log, deriveKekFromSigner } from '@sovereignclaw/memory';
+import { reflectOnOutput } from '@sovereignclaw/reflection';
+
+const kek = await deriveKekFromSigner(wallet, 'research-claw-v1');
+const memory = encrypted(
+  OG_Log({ namespace: 'research-state', rpcUrl, indexerUrl, signer: wallet }),
+  { kek },
+);
+const agent = new Agent({
+  role: 'researcher',
+  inference: sealed0GInference({
+    model: 'qwen/qwen-2.5-7b-instruct',
+    apiKey: ROUTER_KEY,
+    verifiable: true,
+  }),
+  memory,
+  reflect: reflectOnOutput({ rubric: 'accuracy', persistLearnings: true }),
+});
+const out = await agent.run('Summarize the three most-cited 2024 RAG papers.');
+```
+
+```typescript
+// 3. Mint the agent as an ERC-7857 iNFT (one call, real on-chain tx)
+import { mintAgentNFT } from '@sovereignclaw/inft';
+
+const { tokenId, txHash, explorerUrl } = await mintAgentNFT({
+  agent,
+  owner: wallet,
+  royaltyBps: 500,
+});
+console.log(`#${tokenId} → ${explorerUrl}`);
+```
+
+```typescript
+// 4. Cryptographically revoke its memory (DEK zeroed on-chain in <5 s)
+import { revokeMemory } from '@sovereignclaw/inft';
+
+const { txHash, revokedAt, timings } = await revokeMemory({
+  tokenId,
+  owner: wallet,
+  oracle, // OracleClient pointed at the production oracle on Railway
+  onPhase: (p) => console.log(`${p.phase}: ${p.ms}ms`), // oracle-refuse: ~1.5s
+});
+// After this returns: AgentNFT.wrappedDEK is zeros, MemoryRevocation registry
+// is updated, oracle refuses any future re-encryption for tokenId.
+```
+
+The full ResearchClaw example (≈120 LoC) is at
+[`examples/research-claw/`](examples/research-claw/) — copy that folder
+anywhere on disk, fill `.env`, `pnpm install && pnpm dev`. Verified
+clone-to-iNFT under 10 minutes.
 
 ## Production Endpoints
 
@@ -219,23 +289,92 @@ pnpm benchmark:cold-start --clean  # true cold: wipes node_modules first
 
 ## Tests
 
-- **76 Foundry tests** (54 AgentNFT + 11 MemoryRevocation + 6 fuzz + 2
-  invariants × 128k calls each + 1 deploy-script + 1 EIP-712 emitter +
-  1 Ping legacy). Gas snapshot committed at
-  [contracts/.gas-snapshot](contracts/.gas-snapshot).
-- **33 inft + 16 backend + (memory + core)** Vitest unit suites. EIP-712
-  byte-equality and tamper-detection assertions in both packages.
-- **2 inft integration tests** against real testnet (mint + transfer +
-  revoke + post-revoke 410). Bootable in CI via the
+- **77 Foundry tests** across 7 suites (AgentNFT happy path + AgentNFT fuzz
+  - AgentNFT invariants × 128 k handler calls per property + MemoryRevocation
+  - Deploy script + EIP-712 emitter + Ping). Gas snapshot committed at
+    [contracts/.gas-snapshot](contracts/.gas-snapshot) and gated in CI.
+- **123 Vitest unit tests** (35 inft + 39 backend + 18 studio + memory +
+  core + mesh + reflection). EIP-712 byte-equality and tamper-detection
+  assertions in both inft and backend.
+- **Integration tests against real testnet** (mint + transfer + revoke +
+  post-revoke 410). Bootable in CI via the
   [`run-integration` PR label](.github/workflows/integration.yml).
 
 ```bash
-pnpm contracts:test                 # all 76 Foundry tests
+pnpm contracts:test                 # all 77 Foundry tests
 pnpm contracts:snapshot:check       # gas regression gate
-pnpm test                           # all unit suites
+pnpm test                           # 123 unit suites across the workspace
+pnpm benchmark:loc --check          # LoC budget gate (fails CI if exceeded)
 INTEGRATION=1 pnpm --filter @sovereignclaw/inft test:integration
 pnpm check:deployment               # read-only on-chain assertions
 ```
+
+## 0G features used
+
+| Layer                         | Where                                                           | Notes                                                                                                                                               |
+| ----------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Storage Log**               | `@sovereignclaw/memory` (`OG_Log`), `@sovereignclaw/mesh` (bus) | Encrypted (AES-256-GCM, KEK from wallet sig) sovereign-memory writes; per-task mesh-bus namespaces                                                  |
+| **Compute Router**            | `@sovereignclaw/core` (`sealed0GInference`)                     | OpenAI-compatible HTTPS gateway; `verify_tee: true` → `tee_verified` + provider address surfaced as typed `Attestation` on every `InferenceResult`  |
+| **Chain (EVM)**               | `AgentNFT.sol` + `MemoryRevocation.sol`                         | Galileo testnet (chainId 16602); `transferWithReencryption`, `revoke`, `recordUsage` all real txs verifiable on chainscan-galileo                   |
+| **ERC-7857 iNFT pattern**     | `@sovereignclaw/inft`                                           | mint/transfer/revoke/recordUsage helpers; EIP-712 oracle proofs with per-token monotonic nonces; `onPhase` timing instrumentation                   |
+| **MemoryRevocation registry** | `MemoryRevocation.sol`, `pnpm check:deployment`                 | Public on-chain registry of revoked tokens; bound immutably to `AgentNFT`; queryable from any client without paying for the full NFT storage layout |
+
+## Companion repo (Track 2)
+
+**IncomeClaw — five sovereign agents on 0G:**
+[github.com/irajgill/IncomeClaw](https://github.com/irajgill/IncomeClaw).
+A 5-agent autonomous income team (Brain · Strategist · Opener · Closer ·
+Operator), each minted as an iNFT, each with its own encrypted memory,
+communicating through the `@sovereignclaw/mesh`. The Track 2 submission and
+the production consumer of this framework's public API. Pinned versions:
+`@sovereignclaw/core@0.2.0`, `@sovereignclaw/mesh@0.2.0`,
+`@sovereignclaw/inft@0.1.0`, `@sovereignclaw/memory@0.1.0`,
+`@sovereignclaw/reflection@0.1.1`.
+
+## Demo
+
+- **Live ClawStudio:** https://sovereignclaw-studio.vercel.app — drag-build a
+  3-agent research swarm, click Deploy, watch three real iNFTs land on
+  chainscan-galileo in ~60 s.
+- **Live docs:** https://sovereignclaw-docs.vercel.app
+- **Demo video:** _to be uploaded by submission deadline (≤3 min)._ Will
+  walk: `pnpm install` → ResearchClaw run with TEE attestation + reflection
+  learning → mint → revoke (chainscan-verifiable) → ClawStudio drag-build
+  → 3 iNFTs on chain.
+
+## Submission checklist
+
+The full Track 1 submission checklist (`claude.md` §17) is exercised in
+this repo. Boxes ticked at submission time:
+
+- [x] Project name: **SovereignClaw**
+- [x] One-paragraph description (top of this README)
+- [x] Public GitHub repo URL: this one
+- [x] README quality (4 above-the-fold snippets, badges, architecture link, package list)
+- [x] Per-package READMEs for `core / memory / inft / mesh / reflection`
+- [x] [`docs/quickstart.md`](docs/quickstart.md) (verified <10 min path)
+- [x] [`docs/architecture.md`](docs/architecture.md) (layered diagram + data flows)
+- [x] [`docs/benchmarks.md`](docs/benchmarks.md) (measured numbers + reproducible scripts)
+- [x] [`docs/security.md`](docs/security.md) (audit-grade trust model + L1–L12 production-gap ledger)
+- [x] Working ResearchClaw example, runnable from a clean clone
+- [x] Link to IncomeClaw repo (Track 2)
+- [x] Contract addresses on 0G explorer + recorded in [`deployments/0g-testnet.json`](deployments/0g-testnet.json) (manual verification status documented honestly)
+- [ ] Demo video uploaded to YouTube, ≤3 min, link added here
+- [x] Live demo URL (ClawStudio on Vercel), tested from incognito
+- [x] List of 0G features used (table above)
+- [ ] Team contacts (Telegram + X handles below)
+- [x] LICENSE file (Apache 2.0)
+- [x] All packages installable via `pnpm add @sovereignclaw/*`
+- [x] CI badges in this README
+
+## Team / Contact
+
+| Channel                           | Handle                                                          |
+| --------------------------------- | --------------------------------------------------------------- |
+| Telegram                          | _add before submission_                                         |
+| X (Twitter)                       | _add before submission_                                         |
+| GitHub issues                     | https://github.com/lalla-ai/SovereignClaw/issues                |
+| Responsible disclosure (security) | see [docs/security.md](docs/security.md#responsible-disclosure) |
 
 ## License
 
