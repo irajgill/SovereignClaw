@@ -1,4 +1,4 @@
-// File: /home/raj/open-agents/SovereignClaw/packages/studio/app/layout.tsx
+// File: /home/talha/Programs/OpenAgents/SovereignClaw/packages/studio/app/layout.tsx
 import * as entry from '../../../app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
