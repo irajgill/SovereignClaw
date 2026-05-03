@@ -10,3 +10,7 @@ pnpm-lock.yaml
 out
 apps/docs/content/synced
 packages/studio/test/__snapshots__
+# Compiled outputs from packages/studio/tsconfig.lib.json (08de306).
+# Source `.ts` lives next to them and IS formatted; emitted JS/d.ts isn't.
+packages/studio/lib/*.js
+packages/studio/lib/*.d.ts

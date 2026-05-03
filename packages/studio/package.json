@@ -5,9 +5,16 @@
   "license": "Apache-2.0",
   "private": true,
   "type": "module",
+  "files": [
+    "lib/*.js",
+    "lib/*.d.ts",
+    "lib/*.ts",
+    "README.md"
+  ],
   "scripts": {
     "dev": "next dev --port 3030",
     "build": "next build",
+    "build:lib": "tsc -p tsconfig.lib.json",
     "start": "next start --port 3030",
     "test": "vitest run",
     "test:watch": "vitest",

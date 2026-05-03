@@ -1,1 +1,13 @@
 .vercel
+
+# Emitted by `pnpm build:lib` (tsc → lib/*.js + .d.ts). Backend imports
+# these at runtime; CI/Docker regenerates them. Source of truth lives in
+# the co-located .ts files. Do not hand-edit the .js.
+lib/codegen.js
+lib/codegen.d.ts
+lib/types.js
+lib/types.d.ts
+lib/validator.js
+lib/validator.d.ts
+lib/seed-graph.js
+lib/seed-graph.d.ts

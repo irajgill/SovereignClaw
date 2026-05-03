@@ -63,8 +63,17 @@ COPY contracts ./contracts
 COPY deployments ./deployments
 
 # Build only what the backend needs. Order matters because of internal deps.
+#
+# `@sovereignclaw/studio build:lib` compiles the pure-TS subset of the
+# Studio package (codegen, types, validator, seed-graph) to sibling .js
+# files. The backend's /studio/deploy route dynamically imports
+# `@sovereignclaw/studio/lib/codegen.js` at runtime (server-side echo
+# diff); without this step the container throws ERR_MODULE_NOT_FOUND on
+# every deploy attempt. Next.js `next build` is NOT invoked — that output
+# is only needed by the browser Studio, which ships on Vercel.
 RUN pnpm --filter @sovereignclaw/memory build \
  && pnpm --filter @sovereignclaw/inft build \
+ && pnpm --filter @sovereignclaw/studio build:lib \
  && pnpm --filter @sovereignclaw/backend build
 
 # Produce a self-contained runtime bundle. `--prod` strips devDeps. The
