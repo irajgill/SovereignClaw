@@ -1,0 +1,10 @@
+---
+description: Never add Cursor as git co-author or Made-with trailers on commits/PRs
+alwaysApply: true
+---
+
+# Git attribution — no Cursor trailers
+
+- Never append `Co-authored-by: Cursor`, `Made-with: Cursor`, or any Cursor / Anthropic / assistant attribution line to **git commits**, **merge commits**, or **PR descriptions**.
+- When creating commits from this workspace, use normal `git commit` with a clean message body, or low-level `git write-tree` + `git commit-tree` if the tooling would otherwise inject trailers — never leave Cursor listed as co-author.
+- If the user asks to push: verify `git log -1 --format=%B` contains no `Co-authored-by:` line for Cursor before pushing.
