@@ -2,6 +2,9 @@ node_modules/
 dist/
 .turbo/
 coverage/
+# Next.js build output. Vercel insists on a fresh build per deploy
+# (and emits a WARNING when .next/ ships in the upload).
+**/.next/
 .env
 .env.local
 .env.*.local
