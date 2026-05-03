@@ -9,7 +9,17 @@ coverage/
 .DS_Store
 
 # Foundry
-contracts/out/
+# contracts/out/ is mostly throwaway dependency artifacts (OpenZeppelin,
+# forge-std, etc.). We commit only the two ABIs the @sovereignclaw/inft
+# tsup build inlines, so CI/Railway builds don't need Foundry installed.
+# Local rebuild via `pnpm contracts:build` keeps everything fresh.
+contracts/out/*
+!contracts/out/AgentNFT.sol/
+!contracts/out/MemoryRevocation.sol/
+contracts/out/AgentNFT.sol/*
+contracts/out/MemoryRevocation.sol/*
+!contracts/out/AgentNFT.sol/AgentNFT.json
+!contracts/out/MemoryRevocation.sol/MemoryRevocation.json
 contracts/cache/
 contracts/broadcast/
 contracts/lib/

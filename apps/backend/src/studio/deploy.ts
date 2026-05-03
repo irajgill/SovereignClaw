@@ -26,10 +26,27 @@ import type { Logger } from 'pino';
 import { mintAgentNFT, type Deployment } from '@sovereignclaw/inft';
 import { OG_Log } from '@sovereignclaw/memory';
 // Deep import: @sovereignclaw/studio is "private" and doesn't publish its
-// own library entry, but lib/codegen.ts is a pure function with no React
-// imports, so tsx/tsup can bundle it fine. Keep this import narrow so we
-// never accidentally drag Next.js into the backend build.
-import { generateCode } from '@sovereignclaw/studio/lib/codegen.js';
+// own library entry. lib/codegen.ts is a pure function with no React
+// imports. We resolve it lazily via a dynamic import so the Studio module
+// never has to load at backend boot — in production (Studio disabled) the
+// import is never reached, so the deployed container does not need to
+// carry the Studio source. In dev (Studio enabled) the workspace symlink
+// resolves it as before. Keep this import path narrow so we never
+// accidentally drag Next.js into the backend build.
+interface CodegenResult {
+  source: string;
+  imports: Record<string, string[]>;
+}
+type GenerateCode = (graph: unknown) => CodegenResult;
+let cachedGenerateCode: GenerateCode | undefined;
+async function loadGenerateCode(): Promise<GenerateCode> {
+  if (cachedGenerateCode) return cachedGenerateCode;
+  const mod = (await import('@sovereignclaw/studio/lib/codegen.js')) as {
+    generateCode: GenerateCode;
+  };
+  cachedGenerateCode = mod.generateCode;
+  return cachedGenerateCode;
+}
 import { logger as defaultLogger } from '../logger.js';
 import { verifyStudioDeploy, type StudioAuthConfig } from './auth.js';
 import { validateCode } from './bundler.js';
@@ -93,7 +110,7 @@ export function studioDeployRoute(deps: StudioDeps) {
     // adapter, exfiltrate keys, etc. before esbuild ever sees the code.
     // We tolerate trailing-newline and CRLF drift because those are not
     // semantically meaningful, but reject on anything else.
-    const echoIssue = codegenEchoDiff(payload);
+    const echoIssue = await codegenEchoDiff(payload);
     if (echoIssue) {
       log.warn({ reason: echoIssue }, 'studio: rejecting deploy: code/graph mismatch');
       return c.json(
@@ -144,9 +161,10 @@ function normalizeSource(s: string): string {
  *
  * Exported for unit-testability.
  */
-export function codegenEchoDiff(payload: DeployRequest): string | undefined {
+export async function codegenEchoDiff(payload: DeployRequest): Promise<string | undefined> {
   let expected: string;
   try {
+    const generateCode = await loadGenerateCode();
     const out = generateCode(payload.graph);
     expected = out.source;
   } catch (err) {

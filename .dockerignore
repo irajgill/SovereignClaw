@@ -1,0 +1,42 @@
+# .dockerignore — controls what Railway/Docker uploads as the build context.
+# Note: .dockerignore takes precedence over .gitignore for Docker builds.
+#
+# Most heavyweight directories are excluded; we keep `contracts/out/`
+# because the inft package's `tsup` build inlines the JSON ABIs into
+# its bundle, and the Docker build doesn't carry Foundry to recompile.
+# Run `pnpm contracts:build` locally before `railway up`.
+
+# Heavyweight; reinstalled inside the Docker build.
+node_modules/
+**/node_modules/
+
+# Per-package build outputs; Docker rebuilds them inside the build stage.
+**/dist/
+**/.next/
+**/.turbo/
+
+# Test/coverage outputs.
+coverage/
+
+# Local secrets — NEVER ship these into a build context.
+.env
+.env.local
+.env.*.local
+*.log
+
+# OS / editor artifacts.
+.DS_Store
+.vscode/
+.idea/
+
+# Foundry caches; we keep `contracts/out/` (compiled ABIs) but skip the
+# rest of the foundry workspace.
+contracts/cache/
+contracts/broadcast/
+contracts/lib/
+
+# Git directory itself — Railway already snapshots the source.
+.git/
+
+# Heavy docs assets, screenshots, etc. (none today, future-proofing).
+docs/screenshots/

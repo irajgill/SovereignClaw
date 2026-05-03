@@ -1,0 +1,34 @@
+{
+  "url": "https://oracle-production-5db4.up.railway.app",
+  "deployedAt": "2026-05-03T07:09:00Z",
+  "chainId": 16602,
+  "oracleAddress": "0x4a5CbF36C2aE90879f7c2eF5dCC32Fecb0b569e3",
+  "agentNFT": "0xc3f997545da4AA8E70C82Aab82ECB48722740601",
+  "authRequired": true,
+  "studioEnabled": false,
+  "host": "Railway",
+  "railwayProjectId": "9c6bbd50-7efb-4647-855a-2f8f402cc090",
+  "railwayServiceId": "f5e1d200-5a33-4c20-a2af-ff674767d4d8",
+  "smokeTest": {
+    "mintTx": "0x5998051f992f5612e67ad42a4f3aa75a1caea3477f53bef354ae3a5a2d6afa99",
+    "transferTx": "0xeb1583766b182b00bbb4082363c676207f2612f90fad70d4f021cce2f6bae936",
+    "revokeTx": "0x351767ae7c944b1c45c1856b5bfb682b61692b0e8ba25ef82f1d3d65f585c1b1",
+    "explorer": {
+      "mint": "https://chainscan-galileo.0g.ai/tx/0x5998051f992f5612e67ad42a4f3aa75a1caea3477f53bef354ae3a5a2d6afa99",
+      "transfer": "https://chainscan-galileo.0g.ai/tx/0xeb1583766b182b00bbb4082363c676207f2612f90fad70d4f021cce2f6bae936",
+      "revoke": "https://chainscan-galileo.0g.ai/tx/0x351767ae7c944b1c45c1856b5bfb682b61692b0e8ba25ef82f1d3d65f585c1b1"
+    },
+    "asserts": {
+      "agentNFTRevoked": true,
+      "wrappedDEKZeroed": true,
+      "memoryRevocationIsRevoked": true,
+      "oracleRefusesReencrypt410": true
+    }
+  },
+  "notes": [
+    "Bearer-token auth required on every endpoint; ORACLE_AUTH_TOKEN matches the operator's secret store.",
+    "Studio routes are intentionally disabled (no STUDIO_MINTER_PRIVATE_KEY in env). /studio/* returns 503.",
+    "Oracle key matches the on-chain AgentNFT.oracle() value — verified via /oracle/pubkey.",
+    "Revocation registry is process-local and re-mirrored from chain on each reencrypt request (see apps/backend/src/store.ts). For multi-replica or restart-resilient prod, persist to Redis (Phase 8 carryover)."
+  ]
+}

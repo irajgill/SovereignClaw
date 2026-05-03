@@ -10,7 +10,7 @@ services:
   oracle:
     build:
       context: ../..
-      dockerfile: apps/backend/Dockerfile
+      dockerfile: Dockerfile
     image: sovereignclaw-backend:dev
     container_name: sovereignclaw-oracle
     ports:

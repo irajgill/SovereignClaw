@@ -292,26 +292,28 @@ describe('POST /studio/deploy wallet auth (Phase 9)', () => {
 });
 
 describe('codegenEchoDiff (Phase 9)', () => {
-  it('returns undefined when client code equals server codegen', () => {
+  it('returns undefined when client code equals server codegen', async () => {
     const code = generateCode(MINIMAL_VALID_GRAPH).source;
-    expect(codegenEchoDiff({ graph: MINIMAL_VALID_GRAPH, code })).toBeUndefined();
+    expect(await codegenEchoDiff({ graph: MINIMAL_VALID_GRAPH, code })).toBeUndefined();
   });
 
-  it('reports the first differing line when the client tampered with a literal', () => {
+  it('reports the first differing line when the client tampered with a literal', async () => {
     const tampered = generateCode(MINIMAL_VALID_GRAPH).source.replace(
       /"qwen\/qwen-2\.5-7b-instruct"/,
       '"malicious/exfil-model"',
     );
-    const msg = codegenEchoDiff({ graph: MINIMAL_VALID_GRAPH, code: tampered });
+    const msg = await codegenEchoDiff({ graph: MINIMAL_VALID_GRAPH, code: tampered });
     expect(msg).toMatch(/line \d+ differs/);
     expect(msg).toMatch(/exfil-model/);
   });
 
-  it('reports a length diff when the client appends or truncates', () => {
+  it('reports a length diff when the client appends or truncates', async () => {
     const code = generateCode(MINIMAL_VALID_GRAPH).source;
     expect(
-      codegenEchoDiff({ graph: MINIMAL_VALID_GRAPH, code: code + 'const sneaky = 1;\n' }),
+      await codegenEchoDiff({ graph: MINIMAL_VALID_GRAPH, code: code + 'const sneaky = 1;\n' }),
     ).toMatch(/line \d+ differs|length differs/);
-    expect(codegenEchoDiff({ graph: MINIMAL_VALID_GRAPH, code: code.slice(0, -50) })).toBeDefined();
+    expect(
+      await codegenEchoDiff({ graph: MINIMAL_VALID_GRAPH, code: code.slice(0, -50) }),
+    ).toBeDefined();
   });
 });

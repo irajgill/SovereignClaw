@@ -1,0 +1,18 @@
+# Railway build config for the SovereignClaw dev oracle.
+#
+# The Dockerfile lives under apps/backend/ but copies workspace files from
+# the repo root (packages/, deployments/, contracts/, etc.), so the build
+# context MUST be the repo root. This file pins both.
+#
+# Used by `railway up` from the repo root. Apply only to the `oracle`
+# service (we will add other services in later phases).
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+# No healthcheckPath: /healthz requires a bearer token and Railway's
+# healthcheck cannot send headers. We rely on the container staying up.
+# A liveness ping with auth is documented in apps/backend/README.md.
