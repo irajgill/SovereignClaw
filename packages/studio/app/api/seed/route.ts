@@ -5,8 +5,13 @@
 // to embed the graph inline in static HTML.
 
 import { NextResponse } from 'next/server';
-import { seedGraph } from '../../../lib/seed-graph.js';
-import { generateCode } from '../../../lib/codegen.js';
+// No .js extension — Next.js + tsconfig.json's bundler-style resolution
+// reads the .ts source directly. Adding .js only works locally because
+// `tsc -p tsconfig.lib.json` emits sibling .js files; those aren't
+// committed (08de306 ships them only into the npm tarball + Docker
+// image, not into git).
+import { seedGraph } from '../../../lib/seed-graph';
+import { generateCode } from '../../../lib/codegen';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
