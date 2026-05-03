@@ -24,9 +24,7 @@ function streamFrom(input: string | string[]): ReadableStream<Uint8Array> {
   });
 }
 
-async function collect(
-  stream: ReadableStream<Uint8Array>,
-): Promise<InferenceChunk[]> {
+async function collect(stream: ReadableStream<Uint8Array>): Promise<InferenceChunk[]> {
   const out: InferenceChunk[] = [];
   for await (const chunk of parseSSEStream(stream)) {
     out.push(chunk);
@@ -45,41 +43,38 @@ const DELTA_FRAME = (text: string): string =>
     system_fingerprint: null,
   })}\n\n`;
 
-const STOP_FRAME =
-  `data: ${JSON.stringify({
-    choices: [{ delta: { content: '' }, index: 0, finish_reason: 'stop', logprobs: null }],
-    object: 'chat.completion.chunk',
-    usage: null,
-    created: 1777806101,
-    model: 'qwen2.5-7b-instruct',
-    id: 'chatcmpl-test',
-    system_fingerprint: null,
-  })}\n\n`;
+const STOP_FRAME = `data: ${JSON.stringify({
+  choices: [{ delta: { content: '' }, index: 0, finish_reason: 'stop', logprobs: null }],
+  object: 'chat.completion.chunk',
+  usage: null,
+  created: 1777806101,
+  model: 'qwen2.5-7b-instruct',
+  id: 'chatcmpl-test',
+  system_fingerprint: null,
+})}\n\n`;
 
-const USAGE_FRAME =
-  `data: ${JSON.stringify({
-    choices: [],
-    object: 'chat.completion.chunk',
-    usage: { prompt_tokens: 21, completion_tokens: 9, total_tokens: 30 },
-    created: 1777806101,
-    model: 'qwen2.5-7b-instruct',
-    id: 'chatcmpl-test',
-    system_fingerprint: null,
-  })}\n\n`;
+const USAGE_FRAME = `data: ${JSON.stringify({
+  choices: [],
+  object: 'chat.completion.chunk',
+  usage: { prompt_tokens: 21, completion_tokens: 9, total_tokens: 30 },
+  created: 1777806101,
+  model: 'qwen2.5-7b-instruct',
+  id: 'chatcmpl-test',
+  system_fingerprint: null,
+})}\n\n`;
 
-const TRACE_FRAME =
-  `data: ${JSON.stringify({
-    x_0g_trace: {
-      request_id: '107cefb0-daaf-4517-b5ec-352bb1e4a6cf',
-      provider: '0xa48f01287233509FD694a22Bf840225062E67836',
-      billing: {
-        input_cost: '1050000000000',
-        output_cost: '900000000000',
-        total_cost: '1950000000000',
-      },
-      tee_verified: true,
+const TRACE_FRAME = `data: ${JSON.stringify({
+  x_0g_trace: {
+    request_id: '107cefb0-daaf-4517-b5ec-352bb1e4a6cf',
+    provider: '0xa48f01287233509FD694a22Bf840225062E67836',
+    billing: {
+      input_cost: '1050000000000',
+      output_cost: '900000000000',
+      total_cost: '1950000000000',
     },
-  })}\n\n`;
+    tee_verified: true,
+  },
+})}\n\n`;
 
 const DONE_FRAME = `data: [DONE]\n\n`;
 
@@ -95,7 +90,10 @@ describe('parseSSEStream', () => {
       DONE_FRAME;
 
     const chunks = await collect(streamFrom(wire));
-    const tokens = chunks.filter((c) => c.type === 'token') as Array<{ type: 'token'; text: string }>;
+    const tokens = chunks.filter((c) => c.type === 'token') as Array<{
+      type: 'token';
+      text: string;
+    }>;
     expect(tokens.map((t) => t.text)).toEqual(['Hello', ' world']);
 
     const done = chunks.find((c) => c.type === 'done');
@@ -136,7 +134,10 @@ describe('parseSSEStream', () => {
     }
 
     const chunks = await collect(streamFrom(slices));
-    const tokens = chunks.filter((c) => c.type === 'token') as Array<{ type: 'token'; text: string }>;
+    const tokens = chunks.filter((c) => c.type === 'token') as Array<{
+      type: 'token';
+      text: string;
+    }>;
     expect(tokens.map((t) => t.text)).toEqual(['one', 'two', 'three']);
     const done = chunks.find((c) => c.type === 'done');
     expect(done).toBeDefined();
@@ -154,7 +155,10 @@ describe('parseSSEStream', () => {
       USAGE_FRAME;
 
     const chunks = await collect(streamFrom(wire));
-    const tokens = chunks.filter((c) => c.type === 'token') as Array<{ type: 'token'; text: string }>;
+    const tokens = chunks.filter((c) => c.type === 'token') as Array<{
+      type: 'token';
+      text: string;
+    }>;
     expect(tokens.map((t) => t.text)).toEqual(['A']);
     expect(chunks[chunks.length - 1]?.type).toBe('done');
     // The [DONE] frame closed the iterator, so 'B' is never emitted.
@@ -170,7 +174,10 @@ describe('parseSSEStream', () => {
       DONE_FRAME;
 
     const chunks = await collect(streamFrom(wire));
-    const tokens = chunks.filter((c) => c.type === 'token') as Array<{ type: 'token'; text: string }>;
+    const tokens = chunks.filter((c) => c.type === 'token') as Array<{
+      type: 'token';
+      text: string;
+    }>;
     expect(tokens.map((t) => t.text)).toEqual(['hello', ' world']);
   });
 
@@ -188,12 +195,13 @@ describe('parseSSEStream', () => {
   });
 
   it('synthesizes a final done chunk when the stream closes without [DONE]', async () => {
-    const wire =
-      DELTA_FRAME('part') +
-      USAGE_FRAME; // no DONE_FRAME
+    const wire = DELTA_FRAME('part') + USAGE_FRAME; // no DONE_FRAME
 
     const chunks = await collect(streamFrom(wire));
-    const tokens = chunks.filter((c) => c.type === 'token') as Array<{ type: 'token'; text: string }>;
+    const tokens = chunks.filter((c) => c.type === 'token') as Array<{
+      type: 'token';
+      text: string;
+    }>;
     expect(tokens.map((t) => t.text)).toEqual(['part']);
 
     const done = chunks.find((c) => c.type === 'done');
@@ -204,12 +212,13 @@ describe('parseSSEStream', () => {
   });
 
   it('handles CRLF line endings as well as LF', async () => {
-    const wire =
-      DELTA_FRAME('one').replace(/\n/g, '\r\n') +
-      DONE_FRAME.replace(/\n/g, '\r\n');
+    const wire = DELTA_FRAME('one').replace(/\n/g, '\r\n') + DONE_FRAME.replace(/\n/g, '\r\n');
 
     const chunks = await collect(streamFrom(wire));
-    const tokens = chunks.filter((c) => c.type === 'token') as Array<{ type: 'token'; text: string }>;
+    const tokens = chunks.filter((c) => c.type === 'token') as Array<{
+      type: 'token';
+      text: string;
+    }>;
     expect(tokens.map((t) => t.text)).toEqual(['one']);
   });
 

@@ -37,14 +37,12 @@ describe.skipIf(skip)('Mesh MeshEvent surface (integration, real Router)', () =>
 
     const brain = new Agent({
       role: 'brain',
-      systemPrompt:
-        'You are a brief planning agent. Answer in 1–2 short sentences. No lists.',
+      systemPrompt: 'You are a brief planning agent. Answer in 1–2 short sentences. No lists.',
       inference,
     });
     const strategist = new Agent({
       role: 'strategist',
-      systemPrompt:
-        'You are a brief strategist. Answer in 1–2 short sentences. No lists.',
+      systemPrompt: 'You are a brief strategist. Answer in 1–2 short sentences. No lists.',
       inference,
     });
 

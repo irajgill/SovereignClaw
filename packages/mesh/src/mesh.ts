@@ -119,10 +119,7 @@ export class Mesh {
    * `task.complete.finalOutput`; returning an object whose `.finalOutput`
    * is a string uses that; otherwise the result is JSON-stringified.
    */
-  async dispatch<R>(
-    input: string,
-    pattern: (mesh: Mesh, input: string) => Promise<R>,
-  ): Promise<R> {
+  async dispatch<R>(input: string, pattern: (mesh: Mesh, input: string) => Promise<R>): Promise<R> {
     this.assertOpen();
     const taskId = randomUUID();
 

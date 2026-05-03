@@ -1,0 +1,52 @@
+name: Release (npm publish)
+
+# Manually triggered. Publishes any unreleased changesets via
+# `pnpm changeset publish`. The committed `.npmrc` does NOT carry the
+# `${NPM_TOKEN}` reference — that's in `.npmrc.publish`, copied here
+# only for the duration of the publish step.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.12.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org/
+
+      - run: pnpm install --frozen-lockfile
+
+      # Build everything the publish needs (dist/ for each package).
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - run: cd contracts && forge install --no-git --no-commit foundry-rs/forge-std@v1.9.4 OpenZeppelin/openzeppelin-contracts@v5.1.0
+      - run: pnpm contracts:build
+      - run: pnpm build
+
+      - name: Wire publish-time auth
+        run: cp .npmrc.publish .npmrc.publish.tmp && cat .npmrc.publish.tmp >> ~/.npmrc
+
+      - name: Publish
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: pnpm changeset publish
+
+      - name: Push tags
+        run: git push --follow-tags

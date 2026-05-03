@@ -89,10 +89,9 @@ function parseDataPayload(payload: string): RouterDeltaFrame {
   try {
     return JSON.parse(payload) as RouterDeltaFrame;
   } catch (err) {
-    throw new StreamInterruptedError(
-      `malformed SSE JSON payload: ${payload.slice(0, 200)}`,
-      { cause: err },
-    );
+    throw new StreamInterruptedError(`malformed SSE JSON payload: ${payload.slice(0, 200)}`, {
+      cause: err,
+    });
   }
 }
 

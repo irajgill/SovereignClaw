@@ -22,11 +22,7 @@ export {
 
 export { sequentialPattern, type SequentialOptions } from './patterns/sequential.js';
 
-export {
-  type MeshEvent,
-  type MeshEventHandler,
-  type MeshEventType,
-} from './mesh-events.js';
+export { type MeshEvent, type MeshEventHandler, type MeshEventType } from './mesh-events.js';
 
 export {
   BusEventTypes,

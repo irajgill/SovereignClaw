@@ -221,10 +221,7 @@ describe('Mesh.onEvent + dispatch (Phase B PR2)', () => {
     mesh.onEvent((e) => goodEvents.push(e));
 
     // dispatch must still complete despite the buggy subscriber.
-    const result = await mesh.dispatch(
-      'go',
-      sequentialPattern({ agentNames: ['only'] }),
-    );
+    const result = await mesh.dispatch('go', sequentialPattern({ agentNames: ['only'] }));
     expect(result.finalOutput).toBe('ok');
     expect(goodEvents.length).toBeGreaterThan(0);
 

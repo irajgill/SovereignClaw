@@ -1,0 +1,5 @@
+# npm publish auth — copied into ~/.npmrc by the publish workflow before
+# running `pnpm changeset publish`. NEVER append this to the committed
+# .npmrc (would re-introduce the `${NPM_TOKEN}` warning whenever the env
+# var isn't set, e.g. on lint/test CI jobs).
+//registry.npmjs.org/:_authToken=${NPM_TOKEN}

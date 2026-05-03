@@ -31,9 +31,7 @@ export function sequentialPattern(opts: SequentialOptions) {
           `sequentialPattern: agent '${name}' not registered on mesh '${mesh.meshId}'`,
         );
       }
-      const prompt = opts.envelope
-        ? JSON.stringify({ task: input, prior: current })
-        : current;
+      const prompt = opts.envelope ? JSON.stringify({ task: input, prior: current }) : current;
       const out = await agent.run(prompt);
       if (!out || !out.text) {
         throw new EmptyAgentOutputError(agent.role, `sequential[step=${rounds + 1}]`);
