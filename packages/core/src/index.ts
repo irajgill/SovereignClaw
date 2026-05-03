@@ -40,7 +40,12 @@ export {
   type InferenceResult,
   type Attestation,
   type BillingInfo,
+  type TokenUsage,
+  type RunOptions,
+  type StreamRunOptions,
 } from './inference.js';
+
+export { parseSSEStream, type InferenceChunk } from './sse-parser.js';
 
 export {
   defineTool,
@@ -60,6 +65,7 @@ export {
   InferenceTimeoutError,
   EmptyInferenceResponseError,
   DirectModeUnsupportedError,
+  StreamInterruptedError,
   ToolError,
   ToolValidationError,
   ToolExecutionError,

@@ -1,6 +1,6 @@
 {
   "name": "@sovereignclaw/example-research-claw",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "Phase 4 DoD example — a sovereign, encrypted, iNFT-minted research agent on 0G Galileo testnet.",
   "license": "Apache-2.0",

@@ -9,6 +9,7 @@ import type { MemoryProvider } from '@sovereignclaw/memory';
 import { CoreError } from './errors.js';
 import { TypedEventEmitter, type AgentEventHandler, type AgentEventName } from './events.js';
 import type { ChatMessage, InferenceAdapter, InferenceResult } from './inference.js';
+import type { InferenceChunk } from './sse-parser.js';
 import type { ReflectionConfig, ReflectionLearning } from './reflection.js';
 import type { Tool } from './tools.js';
 
@@ -168,7 +169,22 @@ export class Agent {
 
   async run(
     input: string | ChatMessage[],
-    options?: { maxTokens?: number; temperature?: number },
+    options?: {
+      maxTokens?: number;
+      temperature?: number;
+      /** v0.2.0 (Phase B PR1): when set, the inference adapter is called in
+       *  streaming mode and each chunk is forwarded to this callback. The
+       *  agent additionally emits `agent.thinking.{start,token,end}` events
+       *  on its own emitter. The promise still resolves to the full
+       *  InferenceResult after the stream completes. Reflection is
+       *  incompatible with streaming mode (the reflection sub-loop wants a
+       *  single concrete output to critique); when both are configured,
+       *  streaming runs the initial inference but the reflection step uses
+       *  the regular non-streaming adapter. */
+      onChunk?: (chunk: InferenceChunk) => void;
+      /** Optional AbortSignal forwarded to the inference adapter. */
+      signal?: AbortSignal;
+    },
   ): Promise<InferenceResult | null> {
     if (this.closed) throw new AgentClosedError(this.role);
 
@@ -222,10 +238,54 @@ export class Agent {
         await this.cfg.beforeRun({ runId, input, messages });
       }
 
-      const initialOutput = await this.cfg.inference.run(messages, {
+      const wantStream = options?.onChunk !== undefined;
+      if (wantStream) {
+        this.emitter.emit('agent.thinking.start', { role: this.role, runId });
+      }
+
+      // Wrap the user's onChunk so we can also emit agent.thinking.* events
+      // and accumulate the full text on agent.thinking.end. Per spec, errors
+      // thrown inside the user callback abort the stream — same as the
+      // adapter's contract — so we don't try/catch here.
+      let accumulatedText = '';
+      const wrappedOnChunk = wantStream
+        ? (chunk: InferenceChunk): void => {
+            if (chunk.type === 'token') {
+              accumulatedText += chunk.text;
+              this.emitter.emit('agent.thinking.token', {
+                role: this.role,
+                runId,
+                text: chunk.text,
+              });
+            }
+            options!.onChunk!(chunk);
+          }
+        : undefined;
+
+      // Build adapter options conditionally so the non-streaming call shape
+      // is byte-identical to v0.1.x — existing strict-equality tests in
+      // consumers continue to pass without churn.
+      const adapterOpts: Parameters<InferenceAdapter['run']>[1] = {
         maxTokens: options?.maxTokens ?? this.cfg.maxTokens,
         temperature: options?.temperature ?? this.cfg.temperature,
-      });
+      };
+      if (wantStream) {
+        adapterOpts.stream = true;
+        adapterOpts.onChunk = wrappedOnChunk;
+      }
+      if (options?.signal) {
+        adapterOpts.signal = options.signal;
+      }
+
+      const initialOutput = await this.cfg.inference.run(messages, adapterOpts);
+
+      if (wantStream) {
+        this.emitter.emit('agent.thinking.end', {
+          role: this.role,
+          runId,
+          fullText: accumulatedText || initialOutput.text,
+        });
+      }
 
       let output = initialOutput;
       let persistedLearning: ReflectionLearning | undefined;
@@ -280,6 +340,7 @@ export class Agent {
         );
       }
 
+      this.emitter.emit('agent.outcome', { role: this.role, runId, result: output });
       this.emitter.emit('run.complete', { input, output, runId });
       return output;
     } catch (err) {

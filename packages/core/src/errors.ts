@@ -85,6 +85,18 @@ export class DirectModeUnsupportedError extends InferenceError {
   }
 }
 
+/**
+ * A streaming SSE response was malformed or terminated mid-stream. Per
+ * §19.7 / Phase B PR1 spec, mid-stream retries would corrupt state — so this
+ * error is final. Callers that want to retry must restart the request from
+ * scratch (the adapter retries only before the first byte).
+ */
+export class StreamInterruptedError extends InferenceError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(`SSE stream interrupted: ${message}`, options);
+  }
+}
+
 /** Base class for tool failures. */
 export class ToolError extends CoreError {}
 
