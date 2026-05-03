@@ -1,4 +1,12 @@
 packages:
   - 'packages/*'
   - 'apps/*'
-  - 'examples/*'
+  # Most examples are workspace members so they share devDeps and pick up
+  # the local dist/ during development. ResearchClaw is intentionally
+  # excluded — it pins published @sovereignclaw/* versions exactly so a
+  # judge can `cp -r examples/research-claw /tmp/foo && cd /tmp/foo &&
+  # pnpm install && pnpm dev` from a fresh clone with zero workspace
+  # plumbing. (Phase 10 / X3 deliverable.)
+  - 'examples/agent-hello'
+  - 'examples/agent-mint-transfer-revoke'
+  - 'examples/research-mesh'

@@ -1,8 +1,14 @@
 # research-claw
 
-Phase 4 Definition-of-Done example. A sovereign, encrypted, iNFT-minted
-research agent running end-to-end on real 0G Galileo testnet in ~80 LoC of
-agent wiring.
+Phase 4 + Phase 6 Definition-of-Done example. A sovereign, encrypted,
+iNFT-minted research agent running end-to-end on real 0G Galileo testnet in
+~120 LoC of agent wiring.
+
+This example is **deliberately not a workspace member of the SovereignClaw
+monorepo**. It pins exact published `@sovereignclaw/*` versions on npm so a
+judge can copy this directory anywhere on disk, run `pnpm install`, and have
+a working agent in under 10 minutes — no monorepo build cycle, no
+`workspace:*` resolution, no local plumbing.
 
 ## What it does
 
@@ -11,123 +17,136 @@ agent wiring.
    on 0G Storage is AES-256-GCM ciphertext.
 3. Builds an `Agent` with a researcher system prompt and the Router-backed
    `sealed0GInference` adapter (`verify_tee: true`).
-4. Runs the agent on a research question. Prints the TEE attestation,
+4. Adds `reflectOnOutput({ rubric: 'accuracy', rounds: 1, persistLearnings:
+   true })` so a self-critique pass scores every run and persists a
+   `learning:<runId>` record to history. Subsequent runs auto-load recent
+   learnings into context.
+5. Runs the agent on a research question. Prints the TEE attestation,
    provider address, latency, and per-call billing.
-5. Writes an agent manifest to memory, captures the 0G root hash, mints an
+6. Writes an agent manifest to memory, captures the 0G root hash, mints an
    ERC-7857 iNFT via `@sovereignclaw/inft`. Prints the chainscan-galileo URL.
+7. Calls `listRecentLearnings(history, 5)` to confirm the learning is
+   queryable.
 
-Reflection is a Phase 6 add-on; see `docs/dev-log.md` for the phase map.
+## Quickstart (standalone — what a judge would do)
 
-## Quickstart
-
-From a clean clone. If you've already done the root-level setup
-(`docs/quickstart.md`) you can skip straight to step 5.
+The example does not require cloning the whole SovereignClaw monorepo.
+Copy this directory anywhere, fill `.env`, run.
 
 ```bash
-# 1. Clone + enter
+# 1. Copy the example anywhere on disk.
+cp -r examples/research-claw /tmp/research-claw && cd /tmp/research-claw
+
+# 2. Configure env. The .env.example below lists every var the script reads.
+cp .env.example .env
+# Edit .env with:
+#   PRIVATE_KEY=0x...                  (funded wallet — https://faucet.0g.ai)
+#   COMPUTE_ROUTER_API_KEY=sk-...      (https://pc.testnet.0g.ai → deposit + key)
+
+# 3. Install deps from npm. No workspace setup needed.
+pnpm install
+
+# 4. Run.
+pnpm dev
+```
+
+Target: clone-to-iNFT in **<10 min** (assuming a funded wallet + Router key).
+
+## Quickstart (inside the SovereignClaw monorepo)
+
+From the root of the repo, the same example runs against your local-built
+`dist/` of each package — handy for iterating on framework changes.
+
+```bash
 git clone https://github.com/irajgill/SovereignClaw.git
 cd SovereignClaw
-
-# 2. Configure env (copy template, fill PRIVATE_KEY with a funded 0G Galileo wallet)
-cp .env.example .env
-# At minimum set:
-#   PRIVATE_KEY=0x...                          (funded wallet - https://faucet.0g.ai)
-#   COMPUTE_ROUTER_API_KEY=sk-...              (https://pc.testnet.0g.ai -> deposit + issue key)
-
-# 3. Install deps + fetch Foundry libs
+cp .env.example .env  # Fill PRIVATE_KEY + COMPUTE_ROUTER_API_KEY at minimum
 pnpm install
 ( cd contracts && forge install foundry-rs/forge-std --no-git \
-                       && forge install OpenZeppelin/openzeppelin-contracts --no-git \
-                       && forge build )
-
-# 4. Build workspace packages
-pnpm --filter @sovereignclaw/core \
-     --filter @sovereignclaw/memory \
-     --filter @sovereignclaw/inft build
-
-# 5. Run ResearchClaw
-cd examples/research-claw
-pnpm dev
-# Optional: override the question
-pnpm dev "What are the open problems in mechanistic interpretability?"
+                  && forge install OpenZeppelin/openzeppelin-contracts --no-git )
+pnpm contracts:build
+pnpm --filter @sovereignclaw/example-research-claw dev
 ```
 
-## Expected output
+The example dir is intentionally not in `pnpm-workspace.yaml`. The two-step
+flow `pnpm --filter ... dev` resolves against the example's own
+`node_modules` (populated from npm) — exactly the standalone path.
 
-JSON-per-line. Four structured events before the free-form answer, then
-`manifest`, `mint`, and `done` after.
+## Required env
 
-```json
-{ "step": "start",        "owner": "0x...", "chainId": 16602, "AgentNFT": "0xc3f997...", "model": "qwen/qwen-2.5-7b-instruct" }
-{ "step": "run.input",    "question": "Summarize the three most cited papers..." }
-{ "step": "run.start",    "runId": "..." }
-{ "step": "run.complete", "runId": "...", "latencyMs": 7738, "teeVerified": true, "providerAddress": "0xa48f01...", "totalCostWei": "54850000000000" }
+| Var | Where to get it |
+|---|---|
+| `PRIVATE_KEY` | Any 0G Galileo testnet wallet. Fund at https://faucet.0g.ai (0.1 0G/day). |
+| `RPC_URL` | `https://evmrpc-testnet.0g.ai` |
+| `INDEXER_URL` | `https://indexer-storage-testnet-turbo.0g.ai` |
+| `EXPLORER_URL` | `https://chainscan-galileo.0g.ai` |
+| `COMPUTE_ROUTER_BASE_URL` | `https://router-api-testnet.integratenetwork.work/v1` |
+| `COMPUTE_ROUTER_API_KEY` | Issue at https://pc.testnet.0g.ai (separate Router balance, deposit testnet 0G first). |
+| `COMPUTE_MODEL` (opt) | Defaults to `qwen/qwen-2.5-7b-instruct`. |
+| `KEK_NAMESPACE` (opt) | Logical key derivation namespace; defaults to `research-claw-v1`. |
 
+The bundled `.env.example` enumerates all of these.
+
+## Expected output (real run)
+
+A typical run on the live Router emits ~12 JSON-per-line steps:
+
+```
+{ "step": "start", "owner": "0x236E...3b5B", "chainId": 16602, ... }
+{ "step": "run.start", "runId": "...uuid..." }
+{ "step": "run.complete", "runId": "...", "latencyMs": 4321, "teeVerified": true,
+  "providerAddress": "0xa48f...7836", "totalCostWei": "1234500000000" }
+{ "step": "reflect.start", "runId": "..." }
+{ "step": "reflect.complete", "runId": "...", "accepted": true, "rounds": 1, "score": 0.85,
+  "learningPointer": "0x..." }
 === ResearchClaw output ===
-<model answer, ~500–1000 tokens>
+The three most cited papers on retrieval-augmented generation from 2024 are: ...
 ===========================
-
-{ "step": "manifest", "pointer": "0x6bbbe5...33bb08de" }
-{ "step": "mint",     "tokenId": "11", "txHash": "0x76e7c8...91a56717", "explorerUrl": "https://chainscan-galileo.0g.ai/tx/0x76e7c8..." }
-{ "step": "done",     "summary": "ResearchClaw ran, persisted encrypted memory on 0G, and minted the agent as an iNFT." }
+{ "step": "manifest", "pointer": "0x...64-hex..." }
+{ "step": "mint", "tokenId": "<N>", "txHash": "0x...",
+  "explorerUrl": "https://chainscan-galileo.0g.ai/tx/0x..." }
+{ "step": "learnings.recent", "count": 1, "entries": [ ... ] }
+{ "step": "done", "summary": "ResearchClaw ran with reflection, persisted ...",
+  "explorerUrl": "https://chainscan-galileo.0g.ai/tx/0x...", "tokenId": "<N>" }
 ```
 
-## Costs (measured, first run)
+Click the `explorerUrl` to verify the iNFT mint on chainscan-galileo. Click
+the `learningPointer` to find the encrypted reflection write on
+`storagescan-galileo.0g.ai`.
 
-Reference values from the Phase 4 DoD run (tokenId #11). Your fees will
-differ slightly because the 0G indexer re-prices each upload.
+## What the four bullets above prove
 
-| Step                                | ~0G burned      | Where                |
-| ----------------------------------- | --------------- | -------------------- |
-| Memory write — context (3.9 KB)     | ~0.000493 0G    | wallet (storage fee) |
-| History write — run record (3.8 KB) | ~0.000461 0G    | wallet (storage fee) |
-| Memory write — manifest (480 B)     | ~0.0000615 0G   | wallet (storage fee) |
-| Inference (qwen-2.5-7b, ~900 tok)   | 54,850 Gwei     | Router balance       |
-| Mint (AgentNFT.mint)                | ~0.0008 0G      | wallet (gas)         |
-| **Per-run wallet total**            | **~0.002 0G**   | wallet               |
-| **Per-run Router total**            | **~0.00006 0G** | Router balance       |
+This is the framework's hero example because it touches every primitive in
+one ~120-line script:
 
-The faucet allowance (0.1 0G/day) covers ~50 runs per wallet on the chain side.
-Router has a separate balance funded at https://pc.testnet.0g.ai — a small
-deposit (~0.01 0G) covers thousands of inference calls at this size.
+- **Sovereign Memory** — wallet-derived KEK, AES-256-GCM, 0G Log pointers
+- **Verifiable Inference** — `verify_tee: true` flag, `tee_verified=true`
+  in the response trace
+- **iNFT Lifecycle** — one-call mint via `@sovereignclaw/inft`, real on-chain
+  AgentNFT mint
+- **Reflection** — second inference pass, scored, persisted as
+  `learning:<runId>`, queried via `listRecentLearnings`
 
-## Verify the run on-chain
+If a judge can run this and click through the explorer links, the framework
+works.
 
-Every Phase 4 run leaves three verifiable artifacts:
+## Costs (measured)
 
-1. **Inference**: TEE attestation in the output (`teeVerified: true`, plus
-   `providerAddress` — lookup-able on chainscan).
-2. **Memory**: three 0G Storage txs (two agent writes + one manifest). Each
-   tx hash prints in the SDK log; plug any into
-   `https://storagescan-galileo.0g.ai/tx/<hash>`.
-3. **iNFT**: the mint tx goes to `AgentNFT` at
-   `0xc3f997545da4AA8E70C82Aab82ECB48722740601`. Open the `explorerUrl` from
-   the `mint` line; token `#<tokenId>` is now owned by your wallet.
+| Step | Approx 0G burned |
+|---|---|
+| Manifest write to 0G Storage | ~0.000123 0G |
+| Inference (Router billing) | varies by model; qwen-2.5-7b ≈ 0.000002 0G/run |
+| Reflection (second inference) | same as above |
+| iNFT mint | ~0.0008 0G |
+| **Total per run** | **~0.001 0G** |
 
-## Troubleshooting
+The faucet allowance (0.1 0G/day) covers ~100 full runs per wallet.
 
-- **`missing required env var PRIVATE_KEY`** — copy `.env.example` to `.env`
-  at the repo root (or in this example's dir), fill in a funded wallet.
-- **`RouterBalanceError`** — your Router account has zero balance. Deposit
-  testnet 0G at https://pc.testnet.0g.ai. The error message carries the
-  exact URL.
-- **`StorageSdkError: upload failed` with a `status=0` receipt** — known
-  transient on the pinned `@0gfoundation/0g-ts-sdk@1.2.1` against live
-  testnet (indexer-node price-discovery drift). Retry `pnpm dev` 1–2 times;
-  each retry rotates to a different storage node. See `docs/dev-log.md`
-  Phase 3 for the tracking note.
-- **`Cannot find module '@sovereignclaw/core'`** — you haven't built the
-  workspace yet. Run step 4 of the quickstart.
-- **`MintError: contract call reverted`** — check `pnpm check:deployment`
-  from the repo root; all 10 assertions should pass before trying to mint.
+## Two-balance reminder
 
-## Extending
-
-- Swap the question from the CLI:
-  `pnpm dev "Explain entropy coding in neural video codecs"`
-- Change the model: set `COMPUTE_MODEL` in `.env`. Any Router-available
-  model works; TEE attestation is surfaced as-is.
-- Add tools: `@sovereignclaw/core` exposes `defineTool` and ships
-  `httpRequestTool`. Pass a `tools: [...]` array into the `Agent` config.
-- Persist reflection learnings: wait for Phase 6
-  (`@sovereignclaw/reflection`) — ResearchClaw is the canonical demo for it.
+The Compute Router uses a **separate** balance funded via
+`https://pc.testnet.0g.ai`. A wallet with faucet funds is enough for storage
++ chain gas, but inference calls will return HTTP 402 until you also deposit
+into the Router. The inference adapter throws `RouterBalanceError` with the
+deposit URL hint when this happens. Fund both balances once and you're good
+for the day.

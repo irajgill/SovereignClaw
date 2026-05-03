@@ -1,8 +1,8 @@
 {
   "name": "@sovereignclaw/example-research-claw",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "private": true,
-  "description": "Phase 4 DoD example — a sovereign, encrypted, iNFT-minted research agent on 0G Galileo testnet.",
+  "description": "Phase 4 + Phase 6 DoD example — a sovereign, encrypted, iNFT-minted research agent on 0G Galileo testnet. Standalone clone-and-run.",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
@@ -14,10 +14,10 @@
     "clean": "rm -rf node_modules .turbo"
   },
   "dependencies": {
-    "@sovereignclaw/core": "workspace:*",
-    "@sovereignclaw/inft": "workspace:*",
-    "@sovereignclaw/memory": "workspace:*",
-    "@sovereignclaw/reflection": "workspace:*",
+    "@sovereignclaw/core": "0.2.0",
+    "@sovereignclaw/inft": "0.1.0",
+    "@sovereignclaw/memory": "0.1.0",
+    "@sovereignclaw/reflection": "0.1.1",
     "dotenv": "16.4.5",
     "ethers": "6.13.4"
   },

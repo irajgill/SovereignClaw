@@ -1,0 +1,60 @@
+{
+  "network": "0g-galileo-testnet",
+  "chainId": 16602,
+  "deployedAt": "2026-05-02T18:41:44.471Z",
+  "deployer": "0x236E59315dD2Fc05704915a6a1a7ba4791cc3b5B",
+  "oracle": "0x4a5CbF36C2aE90879f7c2eF5dCC32Fecb0b569e3",
+  "txHashes": {
+    "MemoryRevocation": "0x4015e1a585c1e2aa83fcfff1d9a1106aec1baa6c5fccec817e849eefcc81278d",
+    "AgentNFT": "0x51627bc78152b4cb546b62521972d92dd875ff25a7ff7aef04d8d7c0af62b51b"
+  },
+  "addresses": {
+    "MemoryRevocation": "0x735084C861E64923576D04d678bA2f89f6fbb6AC",
+    "AgentNFT": "0xc3f997545da4AA8E70C82Aab82ECB48722740601"
+  },
+  "explorer": {
+    "MemoryRevocation": "https://chainscan-galileo.0g.ai/address/0x735084C861E64923576D04d678bA2f89f6fbb6AC",
+    "AgentNFT": "https://chainscan-galileo.0g.ai/address/0xc3f997545da4AA8E70C82Aab82ECB48722740601"
+  },
+  "verified": {
+    "MemoryRevocation": false,
+    "AgentNFT": false
+  },
+  "verification": {
+    "status": "manual-pending",
+    "reason": "chainscan-galileo.0g.ai is a client-rendered SPA with no exposed Blockscout/Etherscan-compatible API endpoint at the time of deploy. forge verify-contract --verifier blockscout fails because the host returns the SPA shell at /api. Flattened sources are committed under deployments/flattened/ for manual upload via the chainscan UI; instructions in contracts/README.md.",
+    "flattenedSources": {
+      "MemoryRevocation": "deployments/flattened/MemoryRevocation.flat.sol",
+      "AgentNFT": "deployments/flattened/AgentNFT.flat.sol"
+    },
+    "compiler": {
+      "version": "0.8.24",
+      "optimizer": true,
+      "runs": 200,
+      "evmVersion": "default"
+    },
+    "constructorArgs": {
+      "MemoryRevocation": {
+        "abi": ["address"],
+        "values": ["0xc3f997545da4AA8E70C82Aab82ECB48722740601"]
+      },
+      "AgentNFT": {
+        "abi": ["address", "address", "string", "string"],
+        "values": [
+          "0x735084C861E64923576D04d678bA2f89f6fbb6AC",
+          "0x236E59315dD2Fc05704915a6a1a7ba4791cc3b5B",
+          "SovereignClaw Agent",
+          "SCAGENT"
+        ]
+      }
+    }
+  },
+  "oracleHistory": [
+    {
+      "from": "0x236E59315dD2Fc05704915a6a1a7ba4791cc3b5B",
+      "to": "0x4a5CbF36C2aE90879f7c2eF5dCC32Fecb0b569e3",
+      "txHash": "0x1350215cc6b521ac6a8d085a0bab1bb5ab1faded5931701b59886c124077aee1",
+      "at": "2026-05-02T19:43:30.034Z"
+    }
+  ]
+}

@@ -82,7 +82,15 @@ async function main(): Promise<void> {
 
   const provider = new JsonRpcProvider(RPC_URL);
   const signer = new Wallet(PRIVATE_KEY, provider);
-  const deployment = loadDeployment();
+  // We ship a copy of `deployments/0g-testnet.json` next to this script so
+  // the example works as a standalone clone — the published
+  // `@sovereignclaw/inft` package's default `loadDeployment()` walks up
+  // from its own `node_modules` install path, which doesn't contain a
+  // deployment record. See README "Quickstart (standalone)" for the
+  // rationale.
+  const here = dirname(fileURLToPath(import.meta.url));
+  const deploymentPath = process.env.DEPLOYMENT_PATH ?? resolve(here, '..', '0g-testnet.json');
+  const deployment = loadDeployment({ path: deploymentPath });
 
   log('start', {
     owner: signer.address,
