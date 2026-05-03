@@ -10,7 +10,12 @@ import { connect, signDeploy } from '../lib/wallet';
 type Phase = 'idle' | 'signing' | 'posting' | 'polling' | 'done' | 'error';
 
 const PHASE_ICONS: Record<Phase, string> = {
-  idle: '🚀', signing: '✍️', posting: '📡', polling: '⚙️', done: '✅', error: '❌',
+  idle: '🚀',
+  signing: '✍️',
+  posting: '📡',
+  polling: '⚙️',
+  done: '✅',
+  error: '❌',
 };
 
 const PHASE_LABELS: Record<Phase, string> = {
@@ -23,9 +28,14 @@ const PHASE_LABELS: Record<Phase, string> = {
 };
 
 const AGENT_ICONS: Record<string, string> = {
-  planner: '🗺️', executor: '⚡', critic: '🔬',
-  brain: '🧠', strategist: '📊', opener: '📨',
-  closer: '🤝', operator: '🔧',
+  planner: '🗺️',
+  executor: '⚡',
+  critic: '🔬',
+  brain: '🧠',
+  strategist: '📊',
+  opener: '📨',
+  closer: '🤝',
+  operator: '🔧',
 };
 
 export function DeployPanel(): JSX.Element {
@@ -34,8 +44,18 @@ export function DeployPanel(): JSX.Element {
   const graph = useMemo(
     () => ({
       version: 1 as const,
-      nodes: nodes.map((n) => ({ id: n.id, kind: n.data.kind, position: n.position, data: n.data })),
-      edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, edgeRole: e.data?.edgeRole ?? 'inference' })),
+      nodes: nodes.map((n) => ({
+        id: n.id,
+        kind: n.data.kind,
+        position: n.position,
+        data: n.data,
+      })),
+      edges: edges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        edgeRole: e.data?.edgeRole ?? 'inference',
+      })),
     }),
     [nodes, edges],
   );
@@ -52,11 +72,15 @@ export function DeployPanel(): JSX.Element {
   useEffect(() => () => stopPolling(), []);
 
   function stopPolling() {
-    if (pollTimer.current) { clearInterval(pollTimer.current); pollTimer.current = null; }
+    if (pollTimer.current) {
+      clearInterval(pollTimer.current);
+      pollTimer.current = null;
+    }
   }
 
   async function deploy() {
-    setError(null); setStatus(null);
+    setError(null);
+    setStatus(null);
     stopPolling();
     try {
       const { source } = generateCode(graph);
@@ -81,11 +105,14 @@ export function DeployPanel(): JSX.Element {
             if (s.status === 'error' && s.error) setError(s.error);
           }
         } catch (err) {
-          stopPolling(); setPhase('error'); setError((err as Error).message);
+          stopPolling();
+          setPhase('error');
+          setError((err as Error).message);
         }
       }, 1500);
     } catch (err) {
-      setPhase('error'); setError((err as Error).message);
+      setPhase('error');
+      setError((err as Error).message);
     }
   }
 
@@ -98,19 +125,24 @@ export function DeployPanel(): JSX.Element {
       {/* Top row */}
       <div className="deploy-top">
         <div className="deploy-icon">
-          {isDeploying
-            ? <span className="spin" style={{ fontSize: 14 }}>⚙️</span>
-            : PHASE_ICONS[phase]}
+          {isDeploying ? (
+            <span className="spin" style={{ fontSize: 14 }}>
+              ⚙️
+            </span>
+          ) : (
+            PHASE_ICONS[phase]
+          )}
         </div>
         <div className="deploy-heading">Deploy</div>
         <div className="deploy-chips">
           <span className="pill neutral" style={{ fontFamily: 'var(--font-mono)', fontSize: 9 }}>
             🤖 {agentCount}
           </span>
-          {validation.ok
-            ? <span className="pill ok">✓ valid</span>
-            : <span className="pill warn">⚠ {errorCount} err</span>
-          }
+          {validation.ok ? (
+            <span className="pill ok">✓ valid</span>
+          ) : (
+            <span className="pill warn">⚠ {errorCount} err</span>
+          )}
         </div>
       </div>
 
@@ -125,9 +157,14 @@ export function DeployPanel(): JSX.Element {
 
       {/* Done state */}
       {phase === 'done' && (
-        <div className="deploy-phase-line" style={{
-          background: 'rgba(0,255,136,0.06)', borderColor: 'rgba(0,255,136,0.18)', color: 'var(--green)'
-        }}>
+        <div
+          className="deploy-phase-line"
+          style={{
+            background: 'rgba(0,255,136,0.06)',
+            borderColor: 'rgba(0,255,136,0.18)',
+            color: 'var(--green)',
+          }}
+        >
           <span className="status-dot done" />
           Deploy complete — {agentCount} iNFT{agentCount !== 1 ? 's' : ''} minted on 0G
         </div>
@@ -151,11 +188,15 @@ export function DeployPanel(): JSX.Element {
         style={{ justifyContent: 'center', padding: '9px 16px', fontSize: 12.5 }}
       >
         {isDeploying ? (
-          <><span className="spin">⚙</span> {PHASE_LABELS[phase]}</>
+          <>
+            <span className="spin">⚙</span> {PHASE_LABELS[phase]}
+          </>
         ) : phase === 'done' ? (
           <>✓ Deploy again</>
         ) : (
-          <>🚀 Deploy {agentCount} iNFT{agentCount !== 1 ? 's' : ''} to 0G</>
+          <>
+            🚀 Deploy {agentCount} iNFT{agentCount !== 1 ? 's' : ''} to 0G
+          </>
         )}
       </button>
 
@@ -174,7 +215,9 @@ export function DeployPanel(): JSX.Element {
                       <a href={a.explorerUrl} target="_blank" rel="noreferrer">
                         #{a.tokenId} ↗
                       </a>
-                    ) : `#${a.tokenId}`
+                    ) : (
+                      `#${a.tokenId}`
+                    )
                   ) : (
                     <span className="pulse">minting…</span>
                   )}
@@ -196,7 +239,9 @@ export function DeployPanel(): JSX.Element {
                   <a href={status.storageExplorerUrl} target="_blank" rel="noreferrer">
                     {status.manifestRoot.slice(0, 14)}… ↗
                   </a>
-                ) : `${status.manifestRoot.slice(0, 14)}…`}
+                ) : (
+                  `${status.manifestRoot.slice(0, 14)}…`
+                )}
               </span>
             </div>
           )}
@@ -218,7 +263,11 @@ export function DeployPanel(): JSX.Element {
               {status.logs.slice(-5).map((l, i) => (
                 <div key={i} className="ds-row" style={{ gap: 6 }}>
                   <span className="ds-key" style={{ fontSize: 9.5, color: 'var(--ink-5)' }}>
-                    {new Date(l.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    {new Date(l.at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    })}
                   </span>
                   <span className="ds-val" style={{ color: 'var(--ink-3)', fontSize: 10 }}>
                     {l.message}

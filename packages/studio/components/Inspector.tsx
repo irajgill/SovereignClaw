@@ -93,7 +93,13 @@ function ToggleRow({
 }
 
 /* ─── Per-kind forms ─────────────────────────────────────────────────── */
-function MemoryForm({ data, onChange }: { data: MemoryNodeData; onChange: (p: Partial<MemoryNodeData>) => void }) {
+function MemoryForm({
+  data,
+  onChange,
+}: {
+  data: MemoryNodeData;
+  onChange: (p: Partial<MemoryNodeData>) => void;
+}) {
   return (
     <>
       <Section icon="🏷️" label="Configuration">
@@ -113,16 +119,29 @@ function MemoryForm({ data, onChange }: { data: MemoryNodeData; onChange: (p: Pa
         />
       </Section>
       <Section icon="ℹ️" label="About" defaultOpen={false}>
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, color: 'var(--ink-3)', lineHeight: 1.6 }}>
-          AES-256-GCM encrypted. KEK derived from EIP-191 wallet signature via HKDF-SHA-256.
-          Backed by 0G Storage Log — immutable, append-only, content-addressed.
+        <p
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10.5,
+            color: 'var(--ink-3)',
+            lineHeight: 1.6,
+          }}
+        >
+          AES-256-GCM encrypted. KEK derived from EIP-191 wallet signature via HKDF-SHA-256. Backed
+          by 0G Storage Log — immutable, append-only, content-addressed.
         </p>
       </Section>
     </>
   );
 }
 
-function InferenceForm({ data, onChange }: { data: InferenceNodeData; onChange: (p: Partial<InferenceNodeData>) => void }) {
+function InferenceForm({
+  data,
+  onChange,
+}: {
+  data: InferenceNodeData;
+  onChange: (p: Partial<InferenceNodeData>) => void;
+}) {
   return (
     <>
       <Section icon="⚙️" label="Configuration">
@@ -153,7 +172,13 @@ function InferenceForm({ data, onChange }: { data: InferenceNodeData; onChange: 
   );
 }
 
-function ToolForm({ data, onChange }: { data: ToolNodeData; onChange: (p: Partial<ToolNodeData>) => void }) {
+function ToolForm({
+  data,
+  onChange,
+}: {
+  data: ToolNodeData;
+  onChange: (p: Partial<ToolNodeData>) => void;
+}) {
   return (
     <Section icon="🔧" label="Configuration">
       <Field label="Tool name" icon="🏷️">
@@ -174,14 +199,27 @@ function ToolForm({ data, onChange }: { data: ToolNodeData; onChange: (p: Partia
           <option value="file">📄 File — read / write / generate</option>
         </select>
       </Field>
-      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)', lineHeight: 1.5 }}>
+      <p
+        style={{
+          fontFamily: 'var(--font-mono)',
+          fontSize: 10,
+          color: 'var(--ink-4)',
+          lineHeight: 1.5,
+        }}
+      >
         ⚠ Full tool runtime ships with IncomeClaw Phase 9.
       </p>
     </Section>
   );
 }
 
-function ReflectionForm({ data, onChange }: { data: ReflectionNodeData; onChange: (p: Partial<ReflectionNodeData>) => void }) {
+function ReflectionForm({
+  data,
+  onChange,
+}: {
+  data: ReflectionNodeData;
+  onChange: (p: Partial<ReflectionNodeData>) => void;
+}) {
   const isCustom = typeof data.rubric !== 'string';
   const customRubric = isCustom
     ? (data.rubric as { kind: 'custom'; name: string; description: string; criteria: string })
@@ -196,7 +234,14 @@ function ReflectionForm({ data, onChange }: { data: ReflectionNodeData; onChange
             onChange={(e) => {
               const v = e.target.value;
               if (v === 'custom') {
-                onChange({ rubric: { kind: 'custom', name: customRubric?.name ?? 'my-rubric', description: customRubric?.description ?? '', criteria: customRubric?.criteria ?? '' } });
+                onChange({
+                  rubric: {
+                    kind: 'custom',
+                    name: customRubric?.name ?? 'my-rubric',
+                    description: customRubric?.description ?? '',
+                    criteria: customRubric?.criteria ?? '',
+                  },
+                });
               } else {
                 onChange({ rubric: v as 'accuracy' | 'completeness' | 'safety' | 'concision' });
               }
@@ -223,7 +268,8 @@ function ReflectionForm({ data, onChange }: { data: ReflectionNodeData; onChange
         <Field label="Rounds" icon="🔁">
           <input
             type="number"
-            min={1} max={5}
+            min={1}
+            max={5}
             value={data.rounds}
             onChange={(e) => onChange({ rounds: Number(e.target.value) || 1 })}
           />
@@ -233,7 +279,9 @@ function ReflectionForm({ data, onChange }: { data: ReflectionNodeData; onChange
           <div className="range-row">
             <input
               type="range"
-              min={0} max={1} step={0.05}
+              min={0}
+              max={1}
+              step={0.05}
               value={data.threshold}
               onChange={(e) => onChange({ threshold: Number(e.target.value) })}
             />
@@ -252,19 +300,30 @@ function ReflectionForm({ data, onChange }: { data: ReflectionNodeData; onChange
       {isCustom && customRubric && (
         <Section icon="🎨" label="Custom rubric">
           <Field label="Name" icon="🏷️">
-            <input type="text" value={customRubric.name}
+            <input
+              type="text"
+              value={customRubric.name}
               onChange={(e) => onChange({ rubric: { ...customRubric, name: e.target.value } })}
-              placeholder="my-rubric" />
+              placeholder="my-rubric"
+            />
           </Field>
           <Field label="Description" icon="📄">
-            <input type="text" value={customRubric.description}
-              onChange={(e) => onChange({ rubric: { ...customRubric, description: e.target.value } })}
-              placeholder="What does this grade?" />
+            <input
+              type="text"
+              value={customRubric.description}
+              onChange={(e) =>
+                onChange({ rubric: { ...customRubric, description: e.target.value } })
+              }
+              placeholder="What does this grade?"
+            />
           </Field>
           <Field label="Criteria" icon="📋">
-            <textarea rows={4} value={customRubric.criteria}
+            <textarea
+              rows={4}
+              value={customRubric.criteria}
               onChange={(e) => onChange({ rubric: { ...customRubric, criteria: e.target.value } })}
-              placeholder="1. Facts are correct&#10;2. Tone matches&#10;3. No unsupported claims." />
+              placeholder="1. Facts are correct&#10;2. Tone matches&#10;3. No unsupported claims."
+            />
           </Field>
         </Section>
       )}
@@ -272,7 +331,13 @@ function ReflectionForm({ data, onChange }: { data: ReflectionNodeData; onChange
   );
 }
 
-function AgentForm({ data, onChange }: { data: AgentNodeData; onChange: (p: Partial<AgentNodeData>) => void }) {
+function AgentForm({
+  data,
+  onChange,
+}: {
+  data: AgentNodeData;
+  onChange: (p: Partial<AgentNodeData>) => void;
+}) {
   return (
     <>
       <Section icon="🤖" label="Identity">
@@ -294,7 +359,14 @@ function AgentForm({ data, onChange }: { data: AgentNodeData; onChange: (p: Part
             style={{ minHeight: 90 }}
           />
         </Field>
-        <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--ink-4)', lineHeight: 1.5 }}>
+        <p
+          style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            color: 'var(--ink-4)',
+            lineHeight: 1.5,
+          }}
+        >
           🪙 Each agent mints its own ERC-7857 iNFT on deploy — one tx per role.
         </p>
       </Section>
@@ -302,7 +374,13 @@ function AgentForm({ data, onChange }: { data: AgentNodeData; onChange: (p: Part
   );
 }
 
-function MeshForm({ data, onChange }: { data: MeshNodeData; onChange: (p: Partial<MeshNodeData>) => void }) {
+function MeshForm({
+  data,
+  onChange,
+}: {
+  data: MeshNodeData;
+  onChange: (p: Partial<MeshNodeData>) => void;
+}) {
   return (
     <>
       <Section icon="🕸️" label="Identity">
@@ -331,12 +409,23 @@ function MeshForm({ data, onChange }: { data: MeshNodeData; onChange: (p: Partia
         </Field>
         <div className="num-row">
           <Field label="Max rounds" icon="🔁">
-            <input type="number" min={1} max={10} value={data.maxRounds}
-              onChange={(e) => onChange({ maxRounds: Number(e.target.value) || 1 })} />
+            <input
+              type="number"
+              min={1}
+              max={10}
+              value={data.maxRounds}
+              onChange={(e) => onChange({ maxRounds: Number(e.target.value) || 1 })}
+            />
           </Field>
           <Field label="Accept threshold" icon="🎯">
-            <input type="number" step={0.05} min={0} max={1} value={data.acceptThreshold}
-              onChange={(e) => onChange({ acceptThreshold: Number(e.target.value) })} />
+            <input
+              type="number"
+              step={0.05}
+              min={0}
+              max={1}
+              value={data.acceptThreshold}
+              onChange={(e) => onChange({ acceptThreshold: Number(e.target.value) })}
+            />
           </Field>
         </div>
       </Section>
@@ -364,7 +453,9 @@ export function Inspector(): JSX.Element {
           <div className="ie-graphic">🧩</div>
           <div className="ie-title">Nothing selected</div>
           <p className="ie-sub">
-            Click any node on the canvas<br />to configure it here.
+            Click any node on the canvas
+            <br />
+            to configure it here.
           </p>
         </div>
       </aside>
@@ -372,8 +463,12 @@ export function Inspector(): JSX.Element {
   }
 
   const kindIcons: Record<string, string> = {
-    memory: '🗄️', inference: '🧠', tool: '🔧',
-    reflection: '🔄', agent: '🤖', mesh: '🕸️',
+    memory: '🗄️',
+    inference: '🧠',
+    tool: '🔧',
+    reflection: '🔄',
+    agent: '🤖',
+    mesh: '🕸️',
   };
 
   return (
@@ -391,12 +486,36 @@ export function Inspector(): JSX.Element {
 
       <div className="inspector-wrap">
         {/* Per-kind form */}
-        {node.data.kind === 'memory'     && <MemoryForm     data={node.data as MemoryNodeData}     onChange={(p) => patchNodeData(node.id, p)} />}
-        {node.data.kind === 'inference'  && <InferenceForm  data={node.data as InferenceNodeData}  onChange={(p) => patchNodeData(node.id, p)} />}
-        {node.data.kind === 'tool'       && <ToolForm       data={node.data as ToolNodeData}       onChange={(p) => patchNodeData(node.id, p)} />}
-        {node.data.kind === 'reflection' && <ReflectionForm data={node.data as ReflectionNodeData} onChange={(p) => patchNodeData(node.id, p)} />}
-        {node.data.kind === 'agent'      && <AgentForm      data={node.data as AgentNodeData}      onChange={(p) => patchNodeData(node.id, p)} />}
-        {node.data.kind === 'mesh'       && <MeshForm       data={node.data as MeshNodeData}       onChange={(p) => patchNodeData(node.id, p)} />}
+        {node.data.kind === 'memory' && (
+          <MemoryForm
+            data={node.data as MemoryNodeData}
+            onChange={(p) => patchNodeData(node.id, p)}
+          />
+        )}
+        {node.data.kind === 'inference' && (
+          <InferenceForm
+            data={node.data as InferenceNodeData}
+            onChange={(p) => patchNodeData(node.id, p)}
+          />
+        )}
+        {node.data.kind === 'tool' && (
+          <ToolForm data={node.data as ToolNodeData} onChange={(p) => patchNodeData(node.id, p)} />
+        )}
+        {node.data.kind === 'reflection' && (
+          <ReflectionForm
+            data={node.data as ReflectionNodeData}
+            onChange={(p) => patchNodeData(node.id, p)}
+          />
+        )}
+        {node.data.kind === 'agent' && (
+          <AgentForm
+            data={node.data as AgentNodeData}
+            onChange={(p) => patchNodeData(node.id, p)}
+          />
+        )}
+        {node.data.kind === 'mesh' && (
+          <MeshForm data={node.data as MeshNodeData} onChange={(p) => patchNodeData(node.id, p)} />
+        )}
 
         {/* Connections */}
         <Section icon="🔗" label="Connections" count={incidentEdges.length} defaultOpen={false}>
@@ -409,9 +528,7 @@ export function Inspector(): JSX.Element {
                   <code>
                     {e.source} → {e.target}
                   </code>
-                  {e.data?.edgeRole && (
-                    <span className="edge-role-badge">{e.data.edgeRole}</span>
-                  )}
+                  {e.data?.edgeRole && <span className="edge-role-badge">{e.data.edgeRole}</span>}
                   <button
                     className="btn xs icon-btn"
                     onClick={() => removeEdge(e.id)}

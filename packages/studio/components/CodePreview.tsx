@@ -9,11 +9,18 @@ import { validateGraph, type ValidationIssue } from '../lib/validator';
 const Monaco = dynamic(() => import('@monaco-editor/react').then((m) => m.default), {
   ssr: false,
   loading: () => (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      height: '100%', color: 'var(--ink-3)',
-      fontFamily: 'var(--font-mono)', fontSize: 11, gap: 8,
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        color: 'var(--ink-3)',
+        fontFamily: 'var(--font-mono)',
+        fontSize: 11,
+        gap: 8,
+      }}
+    >
       <span className="spin">⚙</span> Loading Monaco editor…
     </div>
   ),
@@ -22,9 +29,9 @@ const Monaco = dynamic(() => import('@monaco-editor/react').then((m) => m.defaul
 type Tab = 'code' | 'graph' | 'issues';
 
 const TABS: Array<{ id: Tab; icon: string; label: string }> = [
-  { id: 'code',   icon: '📄', label: 'TS source' },
-  { id: 'graph',  icon: '🗂️', label: 'graph.json' },
-  { id: 'issues', icon: '🔍', label: 'Issues'  },
+  { id: 'code', icon: '📄', label: 'TS source' },
+  { id: 'graph', icon: '🗂️', label: 'graph.json' },
+  { id: 'issues', icon: '🔍', label: 'Issues' },
 ];
 
 export function CodePreview(): JSX.Element {
@@ -34,21 +41,34 @@ export function CodePreview(): JSX.Element {
   const graph = useMemo(
     () => ({
       version: 1 as const,
-      nodes: nodes.map((n) => ({ id: n.id, kind: n.data.kind, position: n.position, data: n.data })),
-      edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target, edgeRole: e.data?.edgeRole ?? 'inference' })),
+      nodes: nodes.map((n) => ({
+        id: n.id,
+        kind: n.data.kind,
+        position: n.position,
+        data: n.data,
+      })),
+      edges: edges.map((e) => ({
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        edgeRole: e.data?.edgeRole ?? 'inference',
+      })),
     }),
     [nodes, edges],
   );
 
   const validation = useMemo(() => validateGraph(graph), [graph]);
   const code = useMemo(() => {
-    try { return generateCode(graph).source; }
-    catch (err) { return `// codegen error: ${(err as Error).message}`; }
+    try {
+      return generateCode(graph).source;
+    } catch (err) {
+      return `// codegen error: ${(err as Error).message}`;
+    }
   }, [graph]);
   const graphJson = useMemo(() => JSON.stringify(graph, null, 2), [graph]);
 
   const issueCount = validation.issues.length;
-  const errorCount = validation.issues.filter((i) => i.severity === 'error').length;
+  const _errorCount = validation.issues.filter((i) => i.severity === 'error').length;
 
   return (
     <div className="code-panel">

@@ -14,8 +14,12 @@ export function Header(): JSX.Element {
   const nodeCount = nodes.length;
   const edgeCount = edges.length;
 
-  function loadSeed(): void { reset(seedGraph()); }
-  function clear(): void { reset({ version: 1, nodes: [], edges: [] }); }
+  function loadSeed(): void {
+    reset(seedGraph());
+  }
+  function clear(): void {
+    reset({ version: 1, nodes: [], edges: [] });
+  }
 
   function downloadJson(): void {
     const graph = asGraph();
@@ -41,12 +45,12 @@ export function Header(): JSX.Element {
     }
   }
 
-  function disconnect(): void { setWallet(null); }
+  function disconnect(): void {
+    setWallet(null);
+  }
 
   const walletAvailable = isWalletAvailable();
-  const shortAddr = wallet
-    ? `${wallet.address.slice(0, 6)}…${wallet.address.slice(-4)}`
-    : '';
+  const shortAddr = wallet ? `${wallet.address.slice(0, 6)}…${wallet.address.slice(-4)}` : '';
 
   return (
     <header className="studio-header">
@@ -112,9 +116,13 @@ export function Header(): JSX.Element {
         ) : walletAvailable ? (
           <button className="btn" onClick={handleConnect} disabled={busy}>
             {busy ? (
-              <><span className="spin">◌</span> Connecting…</>
+              <>
+                <span className="spin">◌</span> Connecting…
+              </>
             ) : (
-              <><span className="btn-icon">⬡</span> Connect wallet</>
+              <>
+                <span className="btn-icon">⬡</span> Connect wallet
+              </>
             )}
           </button>
         ) : (
@@ -128,21 +136,34 @@ export function Header(): JSX.Element {
       {error && (
         <div
           style={{
-            position: 'absolute', top: '100%', right: 12, marginTop: 8, zIndex: 200,
+            position: 'absolute',
+            top: '100%',
+            right: 12,
+            marginTop: 8,
+            zIndex: 200,
             padding: '7px 12px',
             background: 'var(--pink-dim)',
             border: '1px solid rgba(255,92,138,0.3)',
             borderRadius: 'var(--r)',
             color: 'var(--pink)',
-            fontSize: 11, fontFamily: 'var(--font-mono)',
-            display: 'flex', alignItems: 'center', gap: 7,
+            fontSize: 11,
+            fontFamily: 'var(--font-mono)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
           }}
         >
           ⚠ {error}
           <button
             className="btn-icon"
             onClick={() => setError(null)}
-            style={{ background: 'none', border: 'none', color: 'var(--pink)', cursor: 'pointer', fontSize: 11 }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--pink)',
+              cursor: 'pointer',
+              fontSize: 11,
+            }}
           >
             ✕
           </button>

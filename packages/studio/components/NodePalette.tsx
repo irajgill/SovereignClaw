@@ -162,7 +162,9 @@ export function NodePalette(): JSX.Element {
       <div className="panel-header">
         <div className="panel-header-icon">🧩</div>
         <div className="panel-header-title">Palette</div>
-        <div className="panel-header-badge">{GROUPS.reduce((a, g) => a + g.items.length, 0)} nodes</div>
+        <div className="panel-header-badge">
+          {GROUPS.reduce((a, g) => a + g.items.length, 0)} nodes
+        </div>
       </div>
 
       <div className="palette-scroll">
@@ -172,9 +174,10 @@ export function NodePalette(): JSX.Element {
       </div>
 
       <div className="palette-footer">
-        ⠿ drag to canvas<br />
-        ◎ click to inspect<br />
-        ⟶ drag handles to connect
+        ⠿ drag to canvas
+        <br />
+        ◎ click to inspect
+        <br />⟶ drag handles to connect
       </div>
     </aside>
   );

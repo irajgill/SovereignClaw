@@ -128,7 +128,9 @@ function ToolBody({ data }: { data: ToolNodeData }) {
         <NodeStat label="kind" value={data.toolKind} />
       </div>
       <div className="sc-node-footer">
-        <NodeTag active>{kindIcons[data.toolKind] ?? '⚙'} {data.toolKind}</NodeTag>
+        <NodeTag active>
+          {kindIcons[data.toolKind] ?? '⚙'} {data.toolKind}
+        </NodeTag>
         <NodeTag>v0 scaffold</NodeTag>
       </div>
     </>
@@ -160,7 +162,8 @@ function AgentBody({ data }: { data: AgentNodeData }) {
         <NodeStat label="role" value={data.role} accent />
         {preview && (
           <div className="sc-node-description">
-            {preview}{data.systemPrompt.length > 58 ? '…' : ''}
+            {preview}
+            {data.systemPrompt.length > 58 ? '…' : ''}
           </div>
         )}
       </div>
@@ -182,7 +185,8 @@ function MeshBody({ data }: { data: MeshNodeData }) {
         <NodeStat label="rounds" value={`≤${data.maxRounds}`} />
         {taskPreview && (
           <div className="sc-node-description">
-            {taskPreview}{data.task.length > 55 ? '…' : ''}
+            {taskPreview}
+            {data.task.length > 55 ? '…' : ''}
           </div>
         )}
       </div>
@@ -202,15 +206,20 @@ export function StudioFlowNode(props: NodeProps<StudioNodeData>): JSX.Element {
 
   const title = (() => {
     switch (data.kind) {
-      case 'memory':     return (data as MemoryNodeData).namespace;
-      case 'inference':  return (data as InferenceNodeData).model.split('/').pop() ?? 'model';
-      case 'tool':       return (data as ToolNodeData).toolName;
+      case 'memory':
+        return (data as MemoryNodeData).namespace;
+      case 'inference':
+        return (data as InferenceNodeData).model.split('/').pop() ?? 'model';
+      case 'tool':
+        return (data as ToolNodeData).toolName;
       case 'reflection': {
         const r = (data as ReflectionNodeData).rubric;
         return typeof r === 'string' ? r : r.name;
       }
-      case 'agent':      return (data as AgentNodeData).role;
-      case 'mesh':       return (data as MeshNodeData).meshId;
+      case 'agent':
+        return (data as AgentNodeData).role;
+      case 'mesh':
+        return (data as MeshNodeData).meshId;
     }
   })();
 
@@ -223,14 +232,17 @@ export function StudioFlowNode(props: NodeProps<StudioNodeData>): JSX.Element {
       <Handle
         type="target"
         position={Position.Left}
-        style={{ background: 'var(--bg-3)', border: '1.5px solid rgba(255,255,255,0.16)', width: 11, height: 11 }}
+        style={{
+          background: 'var(--bg-3)',
+          border: '1.5px solid rgba(255,255,255,0.16)',
+          width: 11,
+          height: 11,
+        }}
       />
 
       {/* Header */}
       <div className="sc-node-header">
-        <div className="sc-node-icon-wrap">
-          {cfg.icon}
-        </div>
+        <div className="sc-node-icon-wrap">{cfg.icon}</div>
         <div className="sc-node-meta">
           <div className="sc-node-kind">{cfg.label}</div>
           <div className="sc-node-title">{title}</div>
@@ -239,18 +251,23 @@ export function StudioFlowNode(props: NodeProps<StudioNodeData>): JSX.Element {
       </div>
 
       {/* Per-kind body */}
-      {data.kind === 'memory'     && <MemoryBody data={data as MemoryNodeData} />}
-      {data.kind === 'inference'  && <InferenceBody data={data as InferenceNodeData} />}
-      {data.kind === 'tool'       && <ToolBody data={data as ToolNodeData} />}
+      {data.kind === 'memory' && <MemoryBody data={data as MemoryNodeData} />}
+      {data.kind === 'inference' && <InferenceBody data={data as InferenceNodeData} />}
+      {data.kind === 'tool' && <ToolBody data={data as ToolNodeData} />}
       {data.kind === 'reflection' && <ReflectionBody data={data as ReflectionNodeData} />}
-      {data.kind === 'agent'      && <AgentBody data={data as AgentNodeData} />}
-      {data.kind === 'mesh'       && <MeshBody data={data as MeshNodeData} />}
+      {data.kind === 'agent' && <AgentBody data={data as AgentNodeData} />}
+      {data.kind === 'mesh' && <MeshBody data={data as MeshNodeData} />}
 
       {/* Right source handle */}
       <Handle
         type="source"
         position={Position.Right}
-        style={{ background: 'var(--bg-3)', border: '1.5px solid rgba(255,255,255,0.16)', width: 11, height: 11 }}
+        style={{
+          background: 'var(--bg-3)',
+          border: '1.5px solid rgba(255,255,255,0.16)',
+          width: 11,
+          height: 11,
+        }}
       />
     </div>
   );
