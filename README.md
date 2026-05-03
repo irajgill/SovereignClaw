@@ -2,19 +2,18 @@
 
 Sovereign-memory, multi-agent, iNFT-native agent framework for 0G.
 
-> **Status:** Phase 8 — benchmarks + per-package READMEs shipped. Every
-> public package (`memory`, `core`, `inft`, `mesh`, `reflection`) now
-> has a README with install, a 10-line quickstart, API + errors tables,
-> and links to the matching DoD example. Five live-testnet benchmarks
-> (`loc`, `inference-rtt`, `revoke-latency`, `mesh-throughput`, and the
-> Studio-extended `cold-start`) are committed with raw JSON; the
-> numbers and methodology live in
-> [docs/benchmarks.md](docs/benchmarks.md). A single-page architecture
-> map with the trust model is in [docs/architecture.md](docs/architecture.md).
-> ClawStudio (Phase 7), Reflection (Phase 6), Mesh (Phase 5), and
-> ResearchClaw (Phase 4) all still run standalone. See
-> [docs/quickstart.md](docs/quickstart.md) for the paste-able path and
-> [docs/dev-log.md](docs/dev-log.md) for build progress.
+> **Status:** Phase 9 — polish + audit hardening shipped. `revokeMemory`
+> now reports per-phase timings via an `onPhase` hook; the new
+> oracle-side refuse number is **1.5 s** (vs the <5 s target). Studio
+> deploys now accept EIP-712 wallet signatures verified against
+> `STUDIO_SIGNER_ALLOWLIST` (open-mode fallback for local dev), and the
+> backend re-runs the canonical codegen on every deploy to reject
+> tampered client source before gas. Reflection nodes support custom
+> rubrics via the Inspector. `docs/security.md` has been rewritten
+> audit-grade (L1–L12 production-gap ledger, attacker-capability threat
+> model, responsible-disclosure section). CI now gates on the LoC
+> benchmark. See [docs/dev-log.md](docs/dev-log.md) for the full Phase 9
+> entry and [docs/benchmarks.md](docs/benchmarks.md) for fresh numbers.
 
 ## Deployed addresses (0G Galileo Testnet, chainId `16602`)
 
@@ -58,6 +57,12 @@ asserts the live `AgentNFT.oracle()` matches your local oracle key.
 | Per-package READMEs for `memory / core / inft / mesh / reflection` (Phase 8)                                                          | Install + 10-line quickstart + API table + errors table + links                    |
 | [`docs/architecture.md`](docs/architecture.md) (Phase 8)                                                                              | Layered stack diagram, build/run/revoke data flows, trust model                    |
 | [`docs/benchmarks.md`](docs/benchmarks.md) + `pnpm benchmark:{loc,inference-rtt,revoke-latency,mesh-throughput,cold-start}` (Phase 8) | Five live-testnet benchmarks; raw JSON committed under `scripts/.benchmarks/`      |
+| `revokeMemory` phase instrumentation (Phase 9)                                                                                        | `onPhase` hook + `timings` result; oracle-side refuse now **1.5 s** (<5 s target)  |
+| Studio wallet-connect + EIP-712 deploy auth (Phase 9)                                                                                 | Header connect, typed-data sign, backend `STUDIO_SIGNER_ALLOWLIST`, open-mode dev  |
+| Server-side codegen echo diff (Phase 9)                                                                                               | Rejects tampered client source before gas; CRLF/newline-tolerant, line-diffed 400  |
+| Custom reflection rubrics (Phase 9)                                                                                                   | Inspector textarea for `{ name, description, criteria }`; literal object emitted   |
+| [`docs/security.md`](docs/security.md) audit-grade (Phase 9)                                                                          | Attacker-capability threat model, primitives table, L1–L12 production-gap ledger   |
+| CI LoC gate (Phase 9)                                                                                                                 | `.github/workflows/ci.yml` runs `pnpm benchmark:loc --check` on every PR           |
 
 ## Quickstart — clone → sovereign iNFT on 0G Galileo in <90 seconds
 

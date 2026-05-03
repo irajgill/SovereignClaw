@@ -13,7 +13,7 @@ export { transferAgentNFT } from './transfer.js';
 export type { TransferOptions, TransferResult } from './transfer.js';
 
 export { revokeMemory } from './revoke.js';
-export type { RevokeOptions, RevokeResult } from './revoke.js';
+export type { RevokeOptions, RevokeResult, RevokePhase } from './revoke.js';
 
 export { recordUsage } from './usage.js';
 export type { RecordUsageOptions, RecordUsageResult } from './usage.js';

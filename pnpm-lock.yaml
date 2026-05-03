@@ -84,6 +84,9 @@ importers:
       '@sovereignclaw/memory':
         specifier: workspace:*
         version: link:../../packages/memory
+      '@sovereignclaw/studio':
+        specifier: workspace:*
+        version: link:../../packages/studio
       esbuild:
         specifier: 0.24.0
         version: 0.24.0

@@ -34,7 +34,25 @@ export interface ToolNodeData {
   config: Record<string, string>;
 }
 
-export type ReflectionRubric = 'accuracy' | 'completeness' | 'safety' | 'concision';
+export type BuiltInReflectionRubric = 'accuracy' | 'completeness' | 'safety' | 'concision';
+
+/**
+ * Custom rubric spec. When `kind === 'custom'`, the codegen emits a
+ * `rubric: { name, description, criteria }` object that
+ * `reflectOnOutput(...)` passes straight through to the critic.
+ *
+ * All three fields are free text. We do NOT try to validate
+ * `criteria` beyond rejecting an empty string — the whole point of a
+ * custom rubric is that the user defines the grading policy.
+ */
+export interface CustomReflectionRubric {
+  kind: 'custom';
+  name: string;
+  description: string;
+  criteria: string;
+}
+
+export type ReflectionRubric = BuiltInReflectionRubric | CustomReflectionRubric;
 
 export interface ReflectionNodeData {
   kind: 'reflection';

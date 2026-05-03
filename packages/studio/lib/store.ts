@@ -26,14 +26,28 @@ import type {
 export type CanvasNode = RFNode<StudioNodeData>;
 export type CanvasEdge = Edge & { data?: { edgeRole: EdgeRole } };
 
+/**
+ * Snapshot of a wallet connection. The `provider` is not stored here —
+ * it's kept live in the component that called `connect()` and passed
+ * explicitly into `signDeploy` when needed. Keeping the store
+ * serialisable + free of BrowserProvider lets React devtools render it
+ * cleanly.
+ */
+export interface WalletState {
+  address: string;
+  chainId: number;
+}
+
 interface StudioStoreState {
   nodes: CanvasNode[];
   edges: CanvasEdge[];
   selectedId: string | null;
+  wallet: WalletState | null;
 
   setNodes(nodes: CanvasNode[]): void;
   setEdges(edges: CanvasEdge[]): void;
   setSelected(id: string | null): void;
+  setWallet(w: WalletState | null): void;
 
   addNode(kind: NodeKind, position: { x: number; y: number }): void;
   removeNode(id: string): void;
@@ -104,6 +118,7 @@ export const useStudioStore = create<StudioStoreState>((set, get) => ({
   nodes: [],
   edges: [],
   selectedId: null,
+  wallet: null,
 
   setNodes(nodes): void {
     set({ nodes });
@@ -113,6 +128,9 @@ export const useStudioStore = create<StudioStoreState>((set, get) => ({
   },
   setSelected(id): void {
     set({ selectedId: id });
+  },
+  setWallet(wallet): void {
+    set({ wallet });
   },
 
   addNode(kind, position): void {

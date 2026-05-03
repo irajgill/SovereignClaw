@@ -8,23 +8,22 @@
  *   1. Mint a throwaway iNFT (pointer = synthetic keccak256 so we do NOT
  *      hit 0G Storage in the timed section). Mint is SETUP, excluded
  *      from the published number.
- *   2. `t0 = now()` — the "click" moment.
- *   3. Call `revokeMemory({...})`, which under the hood:
- *        (a) signs the revocation message (EIP-191)
- *        (b) POSTs `/oracle/revoke` — oracle marks the registry immediately
- *            so any concurrent `/oracle/reencrypt` now 410s
- *        (c) submits `AgentNFT.revoke(tokenId, oldKeyHash, proof)` on-chain
- *        (d) awaits the receipt
- *      When `revokeMemory` returns, `t1 = now()` → `chainRevokeMs = t1 - t0`.
- *      This is the "click-to-chain-durable-unreadable" number.
+ *   2. `t0 = now()` — the "click" moment. Captured via the `onPhase`
+ *      hook that `revokeMemory` (Phase 9) fires at each phase boundary:
+ *      `started`, `signed`, `oracle-refused`, `chain-submitted`,
+ *      `chain-confirmed`.
+ *   3. Call `revokeMemory({...})` with `onPhase`.
+ *      - `oracleRefuseMs`   = `oracle-refused - started`
+ *      - `chainRevokeMs`    = `chain-confirmed - started`
  *   4. Call `oracle.reencrypt(...)`; expect `OracleRevokedError`.
- *      `t2 = now()` → `observedRefuseMs = t2 - t0` (one extra RTT).
+ *      - `observedRefuseMs` = `t_now - started` (one extra RTT after
+ *        chain-confirmed).
  *
- * We publish both numbers because the roadmap's single "<5 s" target is
- * ambiguous: the oracle refuses immediately (step 3b, not separately
- * observable here), the chain is durable after a receipt (step 3d), and
- * a client sees the refusal after another round-trip. This lets readers
- * pick the definition that fits their threat model.
+ * We publish THREE numbers now that the oracle-side refuse moment is
+ * directly observable:
+ *   - `oracleRefuseMs`   — oracle-side unreadable (one HTTP RTT)
+ *   - `chainRevokeMs`    — chain-durable unreadable (Galileo block time)
+ *   - `observedRefuseMs` — client confirms the oracle 410 post-revoke
  *
  * Prereqs:
  *   - `apps/backend` running on $ORACLE_URL (default http://localhost:8787)
@@ -73,8 +72,11 @@ interface Sample {
   index: number;
   tokenId: string;
   mintMs: number;
+  oracleRefuseMs: number;
+  chainSubmitMs: number;
   chainRevokeMs: number;
   observedRefuseMs: number;
+  signMs: number;
   mintTx: string;
   revokeTx: string;
 }
@@ -106,20 +108,26 @@ async function runOne(
   );
 
   // --- measured region --------------------------------------------------
-  const t0 = Date.now();
-
   const revoked = await revokeMemory({
     tokenId: minted.tokenId,
     owner: signer,
     oracle,
     deployment,
+    onPhase: (phase, atMs) => {
+      // Live log per phase; useful when running without --verbose.
+      console.log(`    [phase] ${phase.padEnd(18)} @${atMs}`);
+    },
   });
-  const t1 = Date.now();
-  const chainRevokeMs = t1 - t0;
+  const t = revoked.timings;
+  const signMs = t.signed - t.started;
+  const oracleRefuseMs = t['oracle-refused'] - t.started;
+  const chainSubmitMs = t['chain-submitted'] - t.started;
+  const chainRevokeMs = t['chain-confirmed'] - t.started;
   console.log(
-    `  run #${index}: revokeMemory returned in ${chainRevokeMs}ms  ${revoked.explorerUrl}`,
+    `  run #${index}: sign=${signMs}ms oracle=${oracleRefuseMs}ms submit=${chainSubmitMs}ms chain=${chainRevokeMs}ms  ${revoked.explorerUrl}`,
   );
 
+  const t0 = t.started;
   let observedRefuseMs: number;
   try {
     await oracle.reencrypt({
@@ -138,6 +146,9 @@ async function runOne(
     index,
     tokenId: minted.tokenId.toString(),
     mintMs,
+    signMs,
+    oracleRefuseMs,
+    chainSubmitMs,
     chainRevokeMs,
     observedRefuseMs,
     mintTx: minted.txHash,
@@ -174,15 +185,17 @@ async function main(): Promise<void> {
     samples.push(await runOne(i, signer, oracle, deployment));
   }
 
+  const oracleMedian = median(samples.map((s) => s.oracleRefuseMs));
   const chainMedian = median(samples.map((s) => s.chainRevokeMs));
   const observedMedian = median(samples.map((s) => s.observedRefuseMs));
 
   console.log();
-  console.log(`  chain-durable (median):     ${chainMedian}ms`);
-  console.log(`  observed refuse (median):   ${observedMedian}ms`);
+  console.log(`  oracle-side refuse (median):  ${oracleMedian}ms`);
+  console.log(`  chain-durable (median):       ${chainMedian}ms`);
+  console.log(`  client-observed (median):     ${observedMedian}ms`);
   const targetMs = 5000;
   console.log(
-    `  §16 target <${targetMs}ms:        chain ${chainMedian <= targetMs ? 'yes' : 'NO'}  observed ${observedMedian <= targetMs ? 'yes' : 'NO'}`,
+    `  §16 target <${targetMs}ms:            oracle ${oracleMedian <= targetMs ? 'yes' : 'NO'}  chain ${chainMedian <= targetMs ? 'yes' : 'NO'}  observed ${observedMedian <= targetMs ? 'yes' : 'NO'}`,
   );
   console.log();
 
@@ -194,14 +207,17 @@ async function main(): Promise<void> {
     chainId: deployment.chainId,
     oracleUrl,
     targets: {
+      oracleRefuseMs: targetMs,
       chainRevokeMs: targetMs,
       observedRefuseMs: targetMs,
     },
     samples,
     summary: {
       n: samples.length,
+      oracleRefuseMedianMs: oracleMedian,
       chainRevokeMedianMs: chainMedian,
       observedRefuseMedianMs: observedMedian,
+      oracleOk: oracleMedian <= targetMs,
       chainOk: chainMedian <= targetMs,
       observedOk: observedMedian <= targetMs,
     },

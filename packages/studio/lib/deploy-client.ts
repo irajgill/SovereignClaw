@@ -9,6 +9,7 @@
  * with a connected-wallet manifest flow).
  */
 import type { StudioGraph } from './types.js';
+import type { SignedStudioDeployClaim } from './wallet.js';
 
 export interface DeployAgent {
   role: string;
@@ -47,12 +48,24 @@ function resolveBackendUrl(): string {
   return process.env.NEXT_PUBLIC_STUDIO_BACKEND_URL ?? 'http://localhost:8787';
 }
 
-export async function postDeploy(graph: StudioGraph, code: string): Promise<DeployKickoff> {
+/**
+ * POST /studio/deploy.
+ *
+ * Third argument (Phase 9): optional signed claim. When the backend has
+ * `STUDIO_SIGNER_ALLOWLIST` set, this is REQUIRED and the backend
+ * rejects 401 without it. When unset, the backend accepts unsigned
+ * requests (local dev) but will log a warning so operators notice.
+ */
+export async function postDeploy(
+  graph: StudioGraph,
+  code: string,
+  clientSig?: SignedStudioDeployClaim,
+): Promise<DeployKickoff> {
   const url = resolveBackendUrl();
   const res = await fetch(`${url}/studio/deploy`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ graph, code }),
+    body: JSON.stringify(clientSig ? { graph, code, clientSig } : { graph, code }),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');

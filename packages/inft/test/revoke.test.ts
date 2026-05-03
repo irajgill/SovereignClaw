@@ -98,4 +98,67 @@ describe('revokeMemory', () => {
       revokeMemory({ tokenId: 1n, owner, oracle, deployment: FAKE_DEPLOYMENT }),
     ).rejects.toBeInstanceOf(RevokeError);
   });
+
+  it('fires onPhase hook in order and returns matching timings', async () => {
+    const owner = Wallet.createRandom();
+    const oracle = new OracleClient({ url: 'http://oracle.test' });
+    vi.spyOn(oracle, 'revoke').mockResolvedValue({ proof: '0xabc' });
+    mocks.__setGetAgent(async () => ({ wrappedDEK: '0xdeadbeef' }));
+    mocks.__setRevokeImpl(async () => ({
+      wait: async () => ({ hash: '0xfeed', blockNumber: 1, logs: [] }),
+    }));
+
+    const seen: Array<{ phase: string; atMs: number }> = [];
+    const r = await revokeMemory({
+      tokenId: 7n,
+      owner,
+      oracle,
+      deployment: FAKE_DEPLOYMENT,
+      onPhase: (phase, atMs) => seen.push({ phase, atMs }),
+    });
+
+    expect(seen.map((s) => s.phase)).toEqual([
+      'started',
+      'signed',
+      'oracle-refused',
+      'chain-submitted',
+      'chain-confirmed',
+    ]);
+    // Timings are monotonically non-decreasing and match the hook.
+    const phases = [
+      'started',
+      'signed',
+      'oracle-refused',
+      'chain-submitted',
+      'chain-confirmed',
+    ] as const;
+    for (let i = 1; i < phases.length; i++) {
+      expect(r.timings[phases[i]!]).toBeGreaterThanOrEqual(r.timings[phases[i - 1]!]);
+    }
+    for (const s of seen) {
+      expect(r.timings[s.phase as (typeof phases)[number]]).toBe(s.atMs);
+    }
+  });
+
+  it('swallows errors thrown from onPhase so the revoke still succeeds', async () => {
+    const owner = Wallet.createRandom();
+    const oracle = new OracleClient({ url: 'http://oracle.test' });
+    vi.spyOn(oracle, 'revoke').mockResolvedValue({ proof: '0xabc' });
+    mocks.__setGetAgent(async () => ({ wrappedDEK: '0xdeadbeef' }));
+    mocks.__setRevokeImpl(async () => ({
+      wait: async () => ({ hash: '0xfeed', blockNumber: 1, logs: [] }),
+    }));
+
+    const r = await revokeMemory({
+      tokenId: 8n,
+      owner,
+      oracle,
+      deployment: FAKE_DEPLOYMENT,
+      onPhase: () => {
+        throw new Error('boom');
+      },
+    });
+    expect(r.txHash).toBe('0xfeed');
+    expect(r.timings.started).toBeLessThanOrEqual(r.timings['chain-confirmed']);
+  });
 });

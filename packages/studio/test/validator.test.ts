@@ -113,4 +113,51 @@ describe('validateGraph', () => {
     expect(r.ok).toBe(false);
     expect(r.issues.some((i) => i.message.includes('threshold'))).toBe(true);
   });
+
+  it('accepts a well-formed custom rubric', () => {
+    const g = blankGraph();
+    g.nodes.push({
+      id: 'r1',
+      kind: 'reflection',
+      position: { x: 0, y: 0 },
+      data: {
+        kind: 'reflection',
+        rounds: 1,
+        critic: 'self',
+        rubric: {
+          kind: 'custom',
+          name: 'brand-voice',
+          description: 'Matches our brand voice; factually grounded.',
+          criteria: '1. Warm but concise.\n2. No clichés.',
+        },
+        threshold: 0.8,
+        persistLearnings: true,
+      },
+    });
+    const r = validateGraph(g);
+    expect(r.issues.filter((i) => i.severity === 'error' && i.nodeId === 'r1')).toEqual([]);
+  });
+
+  it('flags a custom rubric with blank name / description / criteria', () => {
+    const g = blankGraph();
+    g.nodes.push({
+      id: 'r2',
+      kind: 'reflection',
+      position: { x: 0, y: 0 },
+      data: {
+        kind: 'reflection',
+        rounds: 1,
+        critic: 'self',
+        rubric: { kind: 'custom', name: '', description: '', criteria: '' },
+        threshold: 0.7,
+        persistLearnings: false,
+      },
+    });
+    const r = validateGraph(g);
+    const errs = r.issues.filter((i) => i.severity === 'error' && i.nodeId === 'r2');
+    expect(errs.length).toBeGreaterThanOrEqual(3); // name, description, criteria
+    expect(errs.map((e) => e.message).join('\n')).toMatch(
+      /rubric\.name|rubric\.description|rubric\.criteria/,
+    );
+  });
 });

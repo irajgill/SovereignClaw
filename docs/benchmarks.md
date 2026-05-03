@@ -139,38 +139,40 @@ t0 = "click" (revokeMemory called)
 │   wait for receipt                       (t2; bounded by Galileo block time)
 │
 └─ post-revoke /oracle/reencrypt          ← client-observable refusal
-    expect OracleRevokedError              (t3; t2 + one extra RTT)
+    expect OracleRevokedError              (t3 = t0 + observedRefuseMs)
 ```
 
-With `N=1` (one mint + one revoke, freshly minted throwaway iNFT):
+Phase 9 instrumentation (`revokeMemory` now emits `onPhase` hooks +
+returns per-phase `timings`) lets us report three distinct numbers
+directly, no guess-work.
 
-| Metric                     | Measurement   | Target | Met? |
-| -------------------------- | ------------- | ------ | ---- |
-| Chain-durable revoke       | **12 134 ms** | < 5 s  | NO   |
-| Client-observed refuse     | 12 140 ms     | < 5 s  | NO   |
-| Mint (setup, not measured) | 15 658 ms     | —      | —    |
+With `N=1` (one mint + one revoke, freshly minted throwaway iNFT,
+measured 2026-05-03 on 0G Galileo):
 
-**Why the chain number misses the target.** 0G Galileo produces a block
-every ~2 s and `revokeMemory` waits for one full confirmation. A single
+| Metric                       | Measurement  | Target | Met?                          |
+| ---------------------------- | ------------ | ------ | ----------------------------- |
+| **Oracle-side refuse** (new) | **1 547 ms** | < 5 s  | YES                           |
+| Chain-durable revoke         | 12 487 ms    | < 5 s  | NO (physical)                 |
+| Client-observed refuse       | 12 493 ms    | < 5 s  | NO (== chain-durable + 1 RTT) |
+| Mint (setup, not measured)   | 11 620 ms    | —      | —                             |
+
+**The "<5 s" target is met** for the definition of "unreadable" that
+matches a real user's threat model: the moment the oracle will refuse to
+re-encrypt the token. That happens **inside** a single
+`revokeMemory(...)` call, roughly one HTTP round-trip after the user
+clicks. The `oracle-refused` hook fires at that moment, and the
+measurement excludes wallet-sign time (~300 ms on this hardware).
+
+**Why chain-durable still misses.** 0G Galileo produces a block every
+~2 s and `revokeMemory` waits for one full confirmation. A single
 confirmation of a revoke tx on an unloaded testnet reliably lands in
-6–12 s. The target's "<5 s" reflects an _oracle-side_ timer, which we
-can argue is met in any reasonable definition:
+6–12 s. That is a physical property of the chain, not a SovereignClaw
+defect; a block-time reduction at the 0G layer would close the gap
+automatically. For a deployment that absolutely requires chain-durable
+revocation within 5 s, roll onto a chain with sub-5 s finality.
 
-- The oracle marks the registry and refuses concurrent `/oracle/reencrypt`
-  **inside** the `revokeMemory` call, well before the chain tx is
-  submitted. A properly-instrumented measurement of that moment is
-  on the Phase 9 list — it would require either splitting the helper
-  into two public calls or adding an event hook. Both are avoided in
-  v0 to keep the API a single atomic function.
-- For a CI signal, the observable from a client is the 410 on the next
-  `/oracle/reencrypt`. If the benchmark is tweaked to poll the oracle
-  in a tight loop starting at `t0`, the first 410 arrives within one
-  HTTP RTT — ≪ 1 s — but today's benchmark doesn't measure that.
-
-We publish both the chain-durable and the client-observed numbers so
-readers can decide which definition of "unreadable" matches their threat
-model. See the Phase 3 transcript in [`dev-log.md`](./dev-log.md) for
-the earlier end-to-end trace.
+All three numbers are published so readers can pick the definition that
+matches their threat model. See `docs/security.md` §5 for the semantics.
 
 Invocation: `pnpm benchmark:revoke-latency --n 1`. Requires
 `apps/backend` running on `http://localhost:8787` and a funded wallet

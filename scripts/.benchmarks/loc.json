@@ -1,7 +1,7 @@
 {
   "version": 1,
   "benchmark": "loc",
-  "capturedAt": "2026-05-02T23:30:53.960Z",
+  "capturedAt": "2026-05-03T00:24:53.584Z",
   "node": "v23.3.0",
   "samples": [
     {

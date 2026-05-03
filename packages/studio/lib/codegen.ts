@@ -167,7 +167,20 @@ export function generateCode(graph: StudioGraph): GenerateCodeResult {
     push(`${INDENT}const ${v} = reflectOnOutput({`);
     push(`${INDENT}${INDENT}rounds: ${r.rounds},`);
     push(`${INDENT}${INDENT}critic: ${jsonStr(r.critic === 'self' ? 'self' : 'self')},`);
-    push(`${INDENT}${INDENT}rubric: ${jsonStr(r.rubric)},`);
+    if (typeof r.rubric === 'string') {
+      // Built-in: one of 'accuracy' | 'completeness' | 'safety' | 'concision'.
+      push(`${INDENT}${INDENT}rubric: ${jsonStr(r.rubric)},`);
+    } else {
+      // Custom rubric: emit a literal object that `reflectOnOutput`
+      // accepts and threads to the critic. `name` is identifier-safe
+      // so we don't have to worry about injection; `description` and
+      // `criteria` are free text so we escape via JSON.stringify.
+      push(`${INDENT}${INDENT}rubric: {`);
+      push(`${INDENT}${INDENT}${INDENT}name: ${jsonStr(r.rubric.name)},`);
+      push(`${INDENT}${INDENT}${INDENT}description: ${jsonStr(r.rubric.description)},`);
+      push(`${INDENT}${INDENT}${INDENT}criteria: ${jsonStr(r.rubric.criteria)},`);
+      push(`${INDENT}${INDENT}},`);
+    }
     push(`${INDENT}${INDENT}threshold: ${r.threshold},`);
     push(`${INDENT}${INDENT}persistLearnings: ${r.persistLearnings ? 'true' : 'false'},`);
     push(`${INDENT}});`);

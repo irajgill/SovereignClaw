@@ -53,8 +53,10 @@ function titleFor(data: StudioNodeData): string {
       return (data as InferenceNodeData).model;
     case 'tool':
       return (data as ToolNodeData).toolName;
-    case 'reflection':
-      return (data as ReflectionNodeData).rubric;
+    case 'reflection': {
+      const r = (data as ReflectionNodeData).rubric;
+      return typeof r === 'string' ? r : `custom:${r.name}`;
+    }
     case 'agent':
       return (data as AgentNodeData).role;
     case 'mesh':

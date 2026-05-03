@@ -1,29 +1,35 @@
 {
   "version": 1,
   "benchmark": "revoke-latency",
-  "capturedAt": "2026-05-02T23:38:17.188Z",
+  "capturedAt": "2026-05-03T00:25:48.024Z",
   "node": "v23.3.0",
   "chainId": 16602,
   "oracleUrl": "http://localhost:8787",
   "targets": {
+    "oracleRefuseMs": 5000,
     "chainRevokeMs": 5000,
     "observedRefuseMs": 5000
   },
   "samples": [
     {
       "index": 0,
-      "tokenId": "17",
-      "mintMs": 15658,
-      "chainRevokeMs": 12134,
-      "observedRefuseMs": 12140,
-      "mintTx": "0xe27829ec0c02858a187b641b96307ac3e550aa7c083afa85074f1cfca2829349",
-      "revokeTx": "0x7472809b626932526c0c3736df38d64a43d2f3806506fefb38358d3d1c30bcab"
+      "tokenId": "18",
+      "mintMs": 11620,
+      "signMs": 311,
+      "oracleRefuseMs": 1547,
+      "chainSubmitMs": 3170,
+      "chainRevokeMs": 12487,
+      "observedRefuseMs": 12493,
+      "mintTx": "0xd6489aa2fce23f0ababec31d8696a382ebc1ca461122807c6f9a30104a2bc3ef",
+      "revokeTx": "0x2186612b05c73dc31b53c960b67a160d784fcd5ad9ca9ea33508c8b28262b0b6"
     }
   ],
   "summary": {
     "n": 1,
-    "chainRevokeMedianMs": 12134,
-    "observedRefuseMedianMs": 12140,
+    "oracleRefuseMedianMs": 1547,
+    "chainRevokeMedianMs": 12487,
+    "observedRefuseMedianMs": 12493,
+    "oracleOk": true,
     "chainOk": false,
     "observedOk": false
   }

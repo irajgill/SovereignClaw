@@ -31,11 +31,18 @@ const toolData = z.object({
   config: z.record(z.string()),
 });
 
+const customRubric = z.object({
+  kind: z.literal('custom'),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  criteria: z.string().min(1),
+});
+
 const reflectionData = z.object({
   kind: z.literal('reflection'),
   rounds: z.number().int().positive(),
   critic: z.enum(['self', 'peer']),
-  rubric: z.enum(['accuracy', 'completeness', 'safety', 'concision']),
+  rubric: z.union([z.enum(['accuracy', 'completeness', 'safety', 'concision']), customRubric]),
   threshold: z.number().min(0).max(1),
   persistLearnings: z.boolean(),
 });
@@ -93,12 +100,27 @@ export const studioGraph = z.object({
   edges: z.array(studioEdge),
 });
 
+export const studioDeployClaim = z.object({
+  graphSha: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+  nonce: z.string().regex(/^0x[0-9a-fA-F]{64}$/),
+  timestamp: z.number().int().nonnegative(),
+});
+
+export const signedStudioDeployClaim = z.object({
+  address: z.string().regex(/^0x[0-9a-fA-F]{40}$/),
+  signature: z.string().regex(/^0x[0-9a-fA-F]{130}$/),
+  claim: studioDeployClaim,
+});
+
 export const deployRequest = z.object({
   graph: studioGraph,
   code: z.string().min(1).max(500_000),
+  clientSig: signedStudioDeployClaim.optional(),
 });
 
 export type StudioGraph = z.infer<typeof studioGraph>;
 export type StudioNode = z.infer<typeof studioNode>;
 export type StudioEdge = z.infer<typeof studioEdge>;
 export type DeployRequest = z.infer<typeof deployRequest>;
+export type StudioDeployClaim = z.infer<typeof studioDeployClaim>;
+export type SignedStudioDeployClaim = z.infer<typeof signedStudioDeployClaim>;

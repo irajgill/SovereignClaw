@@ -1130,3 +1130,176 @@ All raw JSON is committed under `scripts/.benchmarks/`.
 5. **Browser wallet-connect + EIP-712 manifest signing for Studio
    deploy.** (Carried forward from Phase 7 item 4.) Still valuable;
    still not needed for DoD.
+
+---
+
+## 2026-05-03 — Phase 9: polish + gap closing
+
+Closes the audit-readiness gaps that accumulated through Phases 7-8:
+security doc rewrite, revoke-latency instrumentation, Studio deploy
+hardening (codegen echo + EIP-712 wallet auth), custom reflection
+rubrics, and a CI gate for the LoC benchmark.
+
+### Deliverables
+
+1. **`docs/security.md` audit-grade rewrite.** Dropped the "Phase 3
+   draft" banner. New structure:
+   - §1 guarantees-at-a-glance matrix
+   - §2 trust boundaries (unchanged)
+   - §3 cryptographic primitives table with code refs
+   - §4 threat model **by attacker capability** (read-only storage,
+     write storage, oracle compromise, owner wallet, router, indexer,
+     registry writer, Studio user)
+   - §5 revocation semantics (honest about what revoke does and does
+     not do)
+   - §6 defense-in-depth matrix
+   - §7 EIP-712 binding with unit-test cross-reference
+   - §8 **production-gap ledger L1–L12** (explicit limitations with
+     required production actions)
+   - §9 verified / tested / unverified layer audit
+   - §10 responsible-disclosure section
+   - §11 change log
+2. **`revokeMemory` phase instrumentation** (`packages/inft/`).
+   - New `onPhase(phase, atMs)` callback option.
+   - New `timings: Record<RevokePhase, number>` on `RevokeResult`.
+   - Five phases: `started`, `signed`, `oracle-refused`,
+     `chain-submitted`, `chain-confirmed`. `oracle-refused` is the
+     moment the oracle's registry has marked the token, i.e. the
+     "unreadable to all future callers" moment — well before chain
+     finality.
+   - Hook errors are swallowed so a misbehaving caller can't break a
+     revoke mid-flight.
+   - Two new unit tests in `packages/inft/test/revoke.test.ts` (4
+     total, was 2).
+3. **`benchmark-revoke-latency` now reports three numbers.**
+   - `oracleRefuseMs` — oracle-side unreadable (HTTP RTT)
+   - `chainRevokeMs` — chain-durable (one block-confirmation)
+   - `observedRefuseMs` — client 410 after chain-confirmed
+   - Live 2026-05-03 measurement:
+     - oracle-side: **1 547 ms** (target <5 s — **MET**)
+     - chain-durable: 12 487 ms (target <5 s — bounded by 0G Galileo
+       block time; physical, not code)
+     - client-observed: 12 493 ms (chain-durable + 1 RTT)
+4. **Server-side codegen echo diff** (`apps/backend/src/studio/deploy.ts`).
+   - Re-runs `generateCode(graph)` on the server and compares to the
+     client-submitted `payload.code`.
+   - Tolerates CRLF and trailing-newline drift only; any other
+     deviation returns **HTTP 400** with the first differing line.
+   - Prevents a tampered client from rendering one thing in Monaco
+     and uploading a different source (e.g., swapping the inference
+     adapter to exfiltrate keys).
+   - Four new backend tests (`codegenEchoDiff` pure tests + route
+     integration tests).
+5. **Studio wallet-connect + EIP-712 signing.**
+   - New `packages/studio/lib/wallet.ts` exports `connect()`,
+     `signDeploy(wallet, graph)`, `freshNonce()`, `graphSha(graph)`.
+   - Signs an EIP-712 typed-data over `{graphSha, nonce, timestamp}`
+     with domain pinned to `chainId=16602` +
+     `verifyingContract=AgentNFT`.
+   - Header component has a Connect/Disconnect button (shows short
+     address + chain id when connected). Graceful fallback when no
+     injected wallet is detected.
+   - DeployPanel signs before POST when a wallet is connected;
+     attaches `clientSig` to the request body.
+   - Backend verifies in `apps/backend/src/studio/auth.ts`
+     (`verifyStudioDeploy`):
+     - timestamp drift check (default ±5 min via
+       `STUDIO_SIGNATURE_MAX_DRIFT_SEC`)
+     - `graphSha` must match server-recomputed
+     - `verifyTypedData` recovers signer; must equal `address`
+     - `STUDIO_SIGNER_ALLOWLIST` gate: when set, recovered signer
+       must be in list; when empty, accepts unsigned in **open mode**
+       (dev / local)
+   - Six new backend auth tests (open-mode accept, closed-mode
+     reject-unsigned, closed-mode accept-allowlisted,
+     closed-mode reject-not-allowlisted, timestamp skew, graph
+     substitution).
+   - Two new env vars: `STUDIO_SIGNER_ALLOWLIST`,
+     `STUDIO_SIGNATURE_MAX_DRIFT_SEC`.
+6. **Custom reflection rubrics in Studio.**
+   - `ReflectionRubric` type now accepts either a built-in string or
+     a `{ kind: 'custom', name, description, criteria }` object.
+   - Inspector adds a "custom…" option in the Rubric dropdown that
+     reveals three text inputs (name, one-line description,
+     multi-line criteria textarea with a helpful placeholder).
+   - Codegen emits a full literal object for custom rubrics; strings
+     continue to emit as a single string literal.
+   - Validator enforces all three custom-rubric fields are non-empty.
+   - Zod schema updated on the backend side to accept the union.
+   - Three new Studio tests (codegen for custom rubric + two
+     validator tests for accept/reject).
+7. **CI LoC benchmark gate.** `.github/workflows/ci.yml` node job now
+   runs `pnpm test` and `pnpm benchmark:loc --check` after build.
+   The `--check` flag fails the job when any §16 target is exceeded.
+   Deterministic, no network, ~1 s.
+
+### Live measurements (2026-05-03)
+
+- Revoke — oracle refuse: **1 547 ms** (was bounded by chain tx pre-9)
+- Revoke — chain durable: 12 487 ms (unchanged; physical chain limit)
+- Studio smoke — `drag-build → deploy → 3 iNFTs`: **60.8 s**
+  (manifest root `0x897efe04…`; tokens #19/#20/#21 on Galileo)
+- LoC check: single-agent 24/30, 3-agent mesh 27/60 (both met)
+
+### Sweep
+
+- `pnpm typecheck` — 17 / 17 tasks green
+- `pnpm lint` — 10 / 10 tasks green (prettier + eslint)
+- `pnpm test` — 16 / 16 tasks green; total **123 unit tests** (was
+  ~105 pre-9):
+  - `@sovereignclaw/inft`: 35 (+2 phase-timing tests)
+  - `@sovereignclaw/backend`: 39 (+10 codegen + auth tests)
+  - `@sovereignclaw/studio`: 18 (+3 custom-rubric tests)
+- `pnpm benchmark:loc --check` — passes
+
+### Design notes
+
+- **Why a callback, not split calls, for revoke timing.** A callback
+  preserves `revokeMemory`'s single-function API (an atomic "revoke
+  this token") while exposing mid-flow visibility. Splitting into two
+  public calls would let the user botch the sequence (oracle-refuse
+  without on-chain revoke = oracle in an inconsistent state across
+  restarts until chain catches up). The callback costs one function
+  reference to pass; the split would cost correctness.
+- **Why an open-mode auth fallback.** Dev deployment ergonomics.
+  Requiring a wallet even for a one-machine `pnpm dev` would kill the
+  <10-minute cold-start number and make the Studio smoke ungating
+  itself. Open mode is loud — backend logs a warning at startup, and
+  open-mode deploys with a signed client still record the signer in
+  the audit log.
+- **Why we accept CRLF / trailing-newline drift in the codegen echo
+  diff but nothing else.** Monaco on Windows + some editor paste
+  paths add those without any semantic change. Narrower tolerance
+  would false-positive; wider tolerance would miss semantic tampering.
+- **Why `STUDIO_SIGNATURE_MAX_DRIFT_SEC` defaults to 300.** Five
+  minutes is the shortest window that doesn't break users whose
+  system clock has drifted by a minute or two. For production
+  deployments, tighten to 60 s with NTP.
+
+### Flake notes
+
+- Alice's wallet (`0x236E59…3b5B`) was fully drained by Phase 8
+  revoke + mint gas. Running the Phase 9 Studio smoke required
+  swapping `.env` to Bob's key temporarily; restored afterwards.
+  The 60.8 s measurement above is from Bob's wallet.
+- `STUDIO_MINTER_PRIVATE_KEY` env override via CLI does NOT take
+  effect if the backend is already running; must restart the backend
+  process. Documented as operational guidance; no code change.
+- Zombie backend processes from earlier phases needed `pkill -f` +
+  `lsof -i :8787` to clean up. Next time, use a persistent terminal
+  with a single long-running `pnpm dev` and don't start a second.
+
+### Carryover from Phase 9 → v0.1 polish bundle
+
+1. **`docs/api.md` auto-generator.** Still on the list; not done here
+   because the per-package READMEs are stable and hand-written tables
+   are honest. Good future hygiene work.
+2. **Publish mesh throughput against a paid/self-hosted router.**
+   Still waiting on a non-testnet environment. Script is ready.
+3. **Source verification on chainscan-galileo.** Manual upload still
+   pending while the explorer's verification form is unstable.
+   Blocker is external.
+4. **Persist revocation registry (L3).** In-memory only today; on
+   backend restart we rebuild from `AgentNFT.revoked + MemoryRevocation`
+   at boot. A persistent SQLite-backed store would be the next
+   correctness upgrade if we expect the oracle to crash or roll.

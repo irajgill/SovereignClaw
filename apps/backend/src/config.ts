@@ -58,6 +58,20 @@ const ConfigSchema = z.object({
     .optional(),
   /** CSV of origins allowed to hit /studio/*; defaults to http://localhost:3030. */
   STUDIO_CORS_ORIGINS: z.string().optional(),
+  /**
+   * Phase 9: CSV of addresses allowed to submit signed /studio/deploy
+   * requests. When unset or empty, the backend runs in OPEN MODE and
+   * accepts unsigned deploys (suitable for local dev only). When set,
+   * the signer recovered from each request's EIP-712 signature must be
+   * in this list or the request returns 401.
+   */
+  STUDIO_SIGNER_ALLOWLIST: z.string().optional(),
+  /**
+   * Phase 9: max allowed drift between `clientSig.claim.timestamp` and
+   * server now, in seconds. Defaults to 300 (±5 min). Lower is safer;
+   * too low fails when the client clock is out of sync.
+   */
+  STUDIO_SIGNATURE_MAX_DRIFT_SEC: z.coerce.number().int().positive().default(300),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 });
 

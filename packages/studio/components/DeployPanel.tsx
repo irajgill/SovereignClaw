@@ -5,9 +5,10 @@ import { useStudioStore } from '../lib/store';
 import { generateCode } from '../lib/codegen';
 import { validateGraph } from '../lib/validator';
 import { fetchStatus, postDeploy, type DeployStatus } from '../lib/deploy-client';
+import { connect, signDeploy } from '../lib/wallet';
 
 export function DeployPanel(): JSX.Element {
-  const { nodes, edges } = useStudioStore();
+  const { nodes, edges, wallet } = useStudioStore();
   const graph = useMemo(
     () => ({
       version: 1 as const,
@@ -52,7 +53,21 @@ export function DeployPanel(): JSX.Element {
     stopPolling();
     try {
       const { source } = generateCode(graph);
-      const kickoff = await postDeploy(graph, source);
+      // If a wallet is connected, sign the deploy claim (EIP-712 over
+      // {graphSha, nonce, timestamp}). The backend only REQUIRES this
+      // when STUDIO_SIGNER_ALLOWLIST is set, but sending it when we
+      // have it lets the backend audit-log the signer even in open
+      // mode — useful for multi-user dev deployments.
+      let clientSig;
+      if (wallet) {
+        // Reconnect to get a live BrowserProvider (we don't persist
+        // it in the store). This is a no-op dialog when already
+        // authorized and keeps us robust to page refreshes.
+        const live = await connect();
+        const signed = await signDeploy(live, graph);
+        clientSig = signed;
+      }
+      const kickoff = await postDeploy(graph, source, clientSig);
       setBackendUrl(kickoff.backendUrl);
       pollTimer.current = setInterval(async () => {
         try {

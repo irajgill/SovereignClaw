@@ -31,6 +31,7 @@ function makeConfig(extra: Partial<{ ORACLE_AUTH_TOKEN: string }> = {}) {
     ORACLE_PRIVATE_KEY: '0x' + '11'.repeat(32),
     ORACLE_AUTH_TOKEN: extra.ORACLE_AUTH_TOKEN,
     LOG_LEVEL: 'fatal' as const,
+    STUDIO_SIGNATURE_MAX_DRIFT_SEC: 300,
     deployment: FAKE_DEPLOYMENT,
   };
 }

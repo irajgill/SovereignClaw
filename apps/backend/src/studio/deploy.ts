@@ -25,7 +25,13 @@ import { Hono } from 'hono';
 import type { Logger } from 'pino';
 import { mintAgentNFT, type Deployment } from '@sovereignclaw/inft';
 import { OG_Log } from '@sovereignclaw/memory';
+// Deep import: @sovereignclaw/studio is "private" and doesn't publish its
+// own library entry, but lib/codegen.ts is a pure function with no React
+// imports, so tsx/tsup can bundle it fine. Keep this import narrow so we
+// never accidentally drag Next.js into the backend build.
+import { generateCode } from '@sovereignclaw/studio/lib/codegen.js';
 import { logger as defaultLogger } from '../logger.js';
+import { verifyStudioDeploy, type StudioAuthConfig } from './auth.js';
 import { validateCode } from './bundler.js';
 import { deployRequest, type DeployRequest } from './types.js';
 import type { DeployStore } from './store.js';
@@ -36,6 +42,13 @@ export interface StudioConfig {
   minterPrivateKey: string;
   deployment: Deployment;
   storageExplorerBase?: string;
+  /**
+   * Phase 9: deploy auth. When `allowList` is non-empty, the deploy
+   * route requires a valid EIP-712 `clientSig` whose recovered signer is
+   * in the list. When empty, the route accepts unsigned requests (dev
+   * mode) and server.ts logs a warning.
+   */
+  auth: StudioAuthConfig;
 }
 
 export interface StudioDeps {
@@ -57,6 +70,41 @@ export function studioDeployRoute(deps: StudioDeps) {
       return c.json({ error: 'invalid deploy payload', detail: (err as Error).message }, 400);
     }
 
+    // EIP-712 wallet auth (Phase 9). When STUDIO_SIGNER_ALLOWLIST is
+    // set, an unsigned or mis-signed request is rejected with 401 before
+    // we spend any CPU on codegen diff or esbuild.
+    const auth = verifyStudioDeploy(payload.graph, payload.clientSig, deps.config.auth);
+    if (!auth.ok) {
+      log.warn({ code: auth.code, detail: auth.detail }, 'studio: auth rejected');
+      const httpStatus = auth.code === 'no-sig' || auth.code === 'not-allowed' ? 401 : 400;
+      return c.json({ error: `deploy rejected: ${auth.code}`, detail: auth.detail }, httpStatus);
+    }
+    if (auth.open && payload.clientSig) {
+      log.info({ signer: auth.signer }, 'studio: open-mode deploy from signed client');
+    } else if (auth.open) {
+      log.info('studio: open-mode deploy (no STUDIO_SIGNER_ALLOWLIST configured)');
+    }
+
+    // Codegen echo diff (Phase 9). We re-run the canonical `generateCode`
+    // against the graph and compare to the client-submitted source after
+    // whitespace normalization. This prevents a malicious client from
+    // rendering one thing in Monaco and uploading a tampered source
+    // string — without it, an attacker could swap out the inference
+    // adapter, exfiltrate keys, etc. before esbuild ever sees the code.
+    // We tolerate trailing-newline and CRLF drift because those are not
+    // semantically meaningful, but reject on anything else.
+    const echoIssue = codegenEchoDiff(payload);
+    if (echoIssue) {
+      log.warn({ reason: echoIssue }, 'studio: rejecting deploy: code/graph mismatch');
+      return c.json(
+        {
+          error: 'deploy rejected: submitted code does not match server-side codegen of the graph',
+          detail: echoIssue,
+        },
+        400,
+      );
+    }
+
     const graphSha = keccak256(toUtf8Bytes(JSON.stringify(payload.graph)));
     const job = deps.store.create(graphSha);
     log.info({ deployId: job.deployId, graphSha }, 'studio: deploy received');
@@ -76,6 +124,50 @@ export function studioDeployRoute(deps: StudioDeps) {
   });
 
   return app;
+}
+
+/**
+ * Normalize generated TS source before byte-comparison. The rules here
+ * are intentionally strict: we only forgive line-ending style and a
+ * single trailing newline, because those are artefacts of the caller's
+ * editor and carry no semantics. Anything else — renamed symbols,
+ * re-ordered agents, swapped inference adapter, etc. — is rejected.
+ */
+function normalizeSource(s: string): string {
+  return s.replace(/\r\n/g, '\n').replace(/\n+$/, '\n');
+}
+
+/**
+ * Re-run `generateCode(graph)` on the server and compare to the client
+ * submission. Returns `undefined` when they match, otherwise a short
+ * human-readable reason suitable for 400 responses + audit logs.
+ *
+ * Exported for unit-testability.
+ */
+export function codegenEchoDiff(payload: DeployRequest): string | undefined {
+  let expected: string;
+  try {
+    const out = generateCode(payload.graph);
+    expected = out.source;
+  } catch (err) {
+    return `server-side codegen threw: ${(err as Error).message}`;
+  }
+  const got = normalizeSource(payload.code);
+  const want = normalizeSource(expected);
+  if (got === want) return undefined;
+  // Report the first differing line number + short slice to help the
+  // operator triage without leaking the whole source into logs.
+  const gotLines = got.split('\n');
+  const wantLines = want.split('\n');
+  const max = Math.max(gotLines.length, wantLines.length);
+  for (let i = 0; i < max; i++) {
+    if (gotLines[i] !== wantLines[i]) {
+      const g = (gotLines[i] ?? '<eof>').slice(0, 120);
+      const w = (wantLines[i] ?? '<eof>').slice(0, 120);
+      return `line ${i + 1} differs: client=${JSON.stringify(g)} server=${JSON.stringify(w)}`;
+    }
+  }
+  return `code length differs (client=${got.length}, server=${want.length})`;
 }
 
 async function runPipeline(

@@ -121,6 +121,23 @@ function validateNodeData(n: StudioNode, issues: ValidationIssue[]): void {
           nodeId: n.id,
         });
       }
+      if (typeof r.rubric !== 'string') {
+        // Custom rubric — all three fields must be non-empty strings.
+        // The `name` field is emitted as a JSON string so we don't
+        // enforce identifier rules, but empty strings would produce
+        // nonsense at runtime, so we flag them as errors.
+        if (!r.rubric || typeof r.rubric !== 'object' || r.rubric.kind !== 'custom') {
+          issues.push({
+            severity: 'error',
+            message: `reflection.rubric must be a built-in string or a { kind: 'custom', name, description, criteria } object`,
+            nodeId: n.id,
+          });
+        } else {
+          requireString(r.rubric.name, 'reflection.rubric.name', n.id, issues);
+          requireString(r.rubric.description, 'reflection.rubric.description', n.id, issues);
+          requireString(r.rubric.criteria, 'reflection.rubric.criteria', n.id, issues);
+        }
+      }
       break;
     }
     case 'agent': {

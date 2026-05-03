@@ -12,9 +12,9 @@ concurrency:
 
 jobs:
   node:
-    name: Node - lint, typecheck, build
+    name: Node - lint, typecheck, test, build, LoC gate
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -27,7 +27,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
+      - run: pnpm test
       - run: pnpm build
+      # Phase 9: CI gate on the LoC benchmark. Fails the job if any
+      # §16 target is exceeded. Cheap, deterministic, no network.
+      - name: LoC benchmark gate (§16 regression guard)
+        run: pnpm benchmark:loc --check
 
   contracts:
     name: Foundry - build + test + snapshot

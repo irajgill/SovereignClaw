@@ -248,15 +248,102 @@ function ReflectionForm({
       <label>
         Rubric
         <select
-          value={data.rubric}
-          onChange={(e) => onChange({ rubric: e.target.value as ReflectionNodeData['rubric'] })}
+          value={typeof data.rubric === 'string' ? data.rubric : 'custom'}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === 'custom') {
+              // Preserve existing custom fields if already custom; otherwise seed with blanks.
+              const prior = typeof data.rubric === 'object' ? data.rubric : undefined;
+              onChange({
+                rubric: {
+                  kind: 'custom',
+                  name: prior?.name ?? 'my-rubric',
+                  description: prior?.description ?? 'Grade the output on my specific criteria.',
+                  criteria: prior?.criteria ?? '1. ...\n2. ...\n3. ...',
+                },
+              });
+            } else {
+              onChange({ rubric: v as 'accuracy' | 'completeness' | 'safety' | 'concision' });
+            }
+          }}
         >
           <option value="accuracy">accuracy</option>
           <option value="completeness">completeness</option>
           <option value="safety">safety</option>
           <option value="concision">concision</option>
+          <option value="custom">custom…</option>
         </select>
       </label>
+      {typeof data.rubric === 'object' && data.rubric.kind === 'custom' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label>
+            Rubric name
+            <input
+              type="text"
+              value={data.rubric.name}
+              onChange={(e) =>
+                onChange({
+                  rubric: {
+                    ...(data.rubric as {
+                      kind: 'custom';
+                      name: string;
+                      description: string;
+                      criteria: string;
+                    }),
+                    name: e.target.value,
+                  },
+                })
+              }
+              placeholder="my-rubric"
+            />
+          </label>
+          <label>
+            Description
+            <input
+              type="text"
+              value={data.rubric.description}
+              onChange={(e) =>
+                onChange({
+                  rubric: {
+                    ...(data.rubric as {
+                      kind: 'custom';
+                      name: string;
+                      description: string;
+                      criteria: string;
+                    }),
+                    description: e.target.value,
+                  },
+                })
+              }
+              placeholder="One line: what does this rubric grade?"
+            />
+          </label>
+          <label>
+            Criteria
+            <textarea
+              rows={5}
+              value={data.rubric.criteria}
+              onChange={(e) =>
+                onChange({
+                  rubric: {
+                    ...(data.rubric as {
+                      kind: 'custom';
+                      name: string;
+                      description: string;
+                      criteria: string;
+                    }),
+                    criteria: e.target.value,
+                  },
+                })
+              }
+              placeholder={
+                '1. Facts are correct and citable.\n2. Tone matches the customer.\n3. No unsupported claims.'
+              }
+              style={{ fontFamily: 'monospace', fontSize: 12 }}
+            />
+          </label>
+        </div>
+      )}
       <label>
         Accept threshold
         <input

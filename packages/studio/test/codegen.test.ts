@@ -115,6 +115,64 @@ describe('generateCode (pure function, snapshot-stable)', () => {
     expect(source).toMatch(/reflect: reflect_refl_1/);
   });
 
+  it('emits a custom rubric as a literal object (Phase 9)', () => {
+    const g: StudioGraph = {
+      version: 1,
+      nodes: [
+        {
+          id: 'inf-1',
+          kind: 'inference',
+          position: { x: 0, y: 0 },
+          data: { kind: 'inference', model: 'qwen/qwen-2.5-7b-instruct', verifiable: true },
+        },
+        {
+          id: 'refl-1',
+          kind: 'reflection',
+          position: { x: 0, y: 100 },
+          data: {
+            kind: 'reflection',
+            rounds: 1,
+            critic: 'self',
+            rubric: {
+              kind: 'custom',
+              name: 'brand-voice',
+              description: 'Matches our brand voice; factually grounded.',
+              criteria: '1. Warm but concise.\n2. No clichés.\n3. Cite sources.',
+            },
+            threshold: 0.8,
+            persistLearnings: false,
+          },
+        },
+        {
+          id: 'agent-1',
+          kind: 'agent',
+          position: { x: 100, y: 0 },
+          data: { kind: 'agent', role: 'r', systemPrompt: 'x' },
+        },
+      ],
+      edges: [
+        { id: 'e1', source: 'inf-1', target: 'agent-1', edgeRole: 'inference' },
+        { id: 'e2', source: 'refl-1', target: 'agent-1', edgeRole: 'reflect' },
+      ],
+    };
+    const { source } = generateCode(g);
+    // Emits the object literal, not the string form.
+    expect(source).toMatch(/rubric: \{/);
+    expect(source).toContain('name: "brand-voice"');
+    expect(source).toContain('description: "Matches our brand voice');
+    // Criteria has newlines — must be JSON-escaped, NOT literal newlines.
+    expect(source).toContain(
+      'criteria: "1. Warm but concise.\\n2. No clichés.\\n3. Cite sources."',
+    );
+    expect(source).not.toContain('rubric: "custom"');
+    // Paranoia: the emitted source has no raw tab / newline inside the criteria literal.
+    const rubricBlock = source.slice(
+      source.indexOf('rubric: {'),
+      source.indexOf('},', source.indexOf('rubric: {')) + 2,
+    );
+    expect(rubricBlock).not.toMatch(/[\t]/);
+  });
+
   it('flags missing inference wiring in a comment, not a crash', () => {
     const broken: StudioGraph = {
       version: 1,

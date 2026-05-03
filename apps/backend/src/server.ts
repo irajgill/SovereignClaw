@@ -90,12 +90,32 @@ export function buildApp(deps: ReturnType<typeof buildDeps>) {
 
   if (studioEnabled) {
     const minterKey = (config.STUDIO_MINTER_PRIVATE_KEY ?? config.PRIVATE_KEY)!;
+    // Parse allow-list CSV → array of checksummed addresses. An unset
+    // variable OR an empty string means "open mode" (dev / local).
+    const allowList = (config.STUDIO_SIGNER_ALLOWLIST ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    if (allowList.length === 0) {
+      logger.warn(
+        'STUDIO_SIGNER_ALLOWLIST is empty; /studio/deploy is open to any client. Set this before exposing the backend to the network.',
+      );
+    } else {
+      logger.info(
+        { allowListSize: allowList.length },
+        'studio deploy auth: STUDIO_SIGNER_ALLOWLIST configured',
+      );
+    }
     const studioConfig = {
       rpcUrl: config.RPC_URL!,
       indexerUrl: config.INDEXER_URL!,
       minterPrivateKey: minterKey,
       deployment: config.deployment,
       storageExplorerBase: config.STORAGE_EXPLORER_URL,
+      auth: {
+        allowList,
+        maxTimestampDriftSec: config.STUDIO_SIGNATURE_MAX_DRIFT_SEC,
+      },
     };
     app.route('/studio', studioDeployRoute({ store: studioStore, config: studioConfig, logger }));
     app.route('/studio', studioStatusRoute({ store: studioStore }));
