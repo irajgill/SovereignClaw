@@ -85,7 +85,9 @@ export async function postDeploy(
   const bearer = resolveBearerToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (bearer) headers.Authorization = `Bearer ${bearer}`;
-  const res = await fetch(`${url}/studio/deploy`, {
+  // Same-origin proxy at /api/studio/* sidesteps the upstream CORS gate.
+  // Server-side route forwards to NEXT_PUBLIC_STUDIO_BACKEND_URL.
+  const res = await fetch(`/api/studio/deploy`, {
     method: 'POST',
     headers,
     body: JSON.stringify(clientSig ? { graph, code, clientSig } : { graph, code }),
@@ -98,11 +100,14 @@ export async function postDeploy(
   return { ...body, backendUrl: url };
 }
 
-export async function fetchStatus(backendUrl: string, deployId: string): Promise<DeployStatus> {
+export async function fetchStatus(_backendUrl: string, deployId: string): Promise<DeployStatus> {
+  // Same-origin proxy — `_backendUrl` is preserved in the API for backward
+  // compatibility with callers that still pass it from DeployKickoff, but we
+  // route through /api/studio/* to avoid the upstream CORS gate.
   const bearer = resolveBearerToken();
   const headers: Record<string, string> = {};
   if (bearer) headers.Authorization = `Bearer ${bearer}`;
-  const res = await fetch(`${backendUrl}/studio/status/${deployId}`, { headers });
+  const res = await fetch(`/api/studio/status/${deployId}`, { headers });
   if (!res.ok) {
     throw new Error(`status fetch failed: ${res.status}`);
   }
