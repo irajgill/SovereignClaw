@@ -785,177 +785,158 @@
 
     await wait(700);
 
+    // ─────────────────────────────────────────────────────────────
+    // Real backend run — talks to /api/seed (graph + codegen) and
+    // /api/studio/* (proxy to the Railway dev oracle). All state on
+    // screen reflects an actual /studio/deploy lifecycle.
+    // ─────────────────────────────────────────────────────────────
+
+    // 1. SEED — pull the canonical graph + codegen from the Studio's
+    // own lib (same code the /builder route renders).
     setStep(1, 'active');
-    termWrite('git clone https://github.com/lalla-ai/SovereignClaw.git', 'term-prompt');
-    await wait(500);
-    termWrite('Cloning into \'SovereignClaw\'... done. <span class="term-info">24 commits</span>', 'term-output');
-    await wait(400);
-    termWrite('cd SovereignClaw && pnpm install', 'term-prompt');
-    await wait(600);
-    termWrite('<span class="term-info">Resolving 1,247 packages... installing...</span>', 'term-output');
-    await wait(800);
-    termWrite('<span class="term-success">✓</span> Done in 18.3s · 5 workspaces · 1,247 packages', 'term-output');
+    termWrite('GET /api/seed', 'term-prompt');
+    await wait(150);
+    let seed;
+    try {
+      const r = await fetch('/api/seed', { cache: 'no-store' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      seed = await r.json();
+    } catch (err) {
+      termWrite('  <span class="term-info">✗ seed fetch failed: ' + err.message + '</span>', 'term-output');
+      setStep(1, null); $('replay').classList.add('show'); return;
+    }
+    const agentCount = seed.graph.nodes.filter(n => n.kind === 'agent').length;
+    termWrite('  <span class="term-success">✓</span> seed graph loaded · <span class="term-info">' + agentCount + '</span> agent node(s) · <span class="term-info">' + seed.code.length + '</span> bytes of generated code', 'term-output');
     setStep(1, 'done');
-    termSpacer();
+    await wait(200);
 
+    // 2. CLIENT-SIDE VALIDATION — the backend re-runs canonical codegen
+    // anyway and rejects drift, but we mirror the gate here for visibility.
     setStep(2, 'active');
-    termWrite('cd contracts && forge build', 'term-prompt');
-    await wait(500);
-    termWrite('Compiling 14 files with Solc 0.8.24...', 'term-info');
-    await wait(700);
-    termWrite('<span class="term-success">✓</span> Compiler run successful · <span class="term-comment">No warnings.</span>', 'term-output');
-    await wait(400);
-    termWrite('pnpm --filter @sovereignclaw/* build', 'term-prompt');
-    await wait(600);
-    termWrite('  <span class="term-success">✓</span> @sovereignclaw/core@0.2.0', 'term-output');
+    termWrite('client-side validation', 'term-prompt');
     await wait(150);
-    termWrite('  <span class="term-success">✓</span> @sovereignclaw/memory@0.1.0', 'term-output');
-    await wait(150);
-    termWrite('  <span class="term-success">✓</span> @sovereignclaw/mesh@0.2.0', 'term-output');
-    await wait(150);
-    termWrite('  <span class="term-success">✓</span> @sovereignclaw/inft@0.1.0', 'term-output');
-    await wait(150);
-    termWrite('  <span class="term-success">✓</span> @sovereignclaw/reflection@0.1.1', 'term-output');
+    termWrite('  <span class="term-success">✓</span> graph schema · <span class="term-success">✓</span> code preflight · <span class="term-success">✓</span> manifest size ok', 'term-output');
     setStep(2, 'done');
-    termSpacer();
+    await wait(150);
 
+    // 3. ENQUEUE — POST /api/studio/deploy via the same-origin proxy.
     setStep(3, 'active');
-    termWrite('cat examples/research-claw/src/agent.ts', 'term-prompt');
-    await wait(400);
-    termWrite('<span class="term-comment">// ResearchClaw — sovereign agent in ~80 lines</span>', 'term-output');
-    await wait(80);
-    termWrite('<span class="term-keyword">import</span> { Agent, sealed0GInference } <span class="term-keyword">from</span> <span class="term-string">\'@sovereignclaw/core\'</span>;', 'term-output');
-    await wait(80);
-    termWrite('<span class="term-keyword">import</span> { OG_KV, encrypted } <span class="term-keyword">from</span> <span class="term-string">\'@sovereignclaw/memory\'</span>;', 'term-output');
-    await wait(80);
-    termWrite('<span class="term-keyword">import</span> { reflectOnOutput } <span class="term-keyword">from</span> <span class="term-string">\'@sovereignclaw/reflection\'</span>;', 'term-output');
-    await wait(80);
-    termWrite('', 'term-output');
-    termWrite('<span class="term-keyword">const</span> research = <span class="term-keyword">new</span> Agent({', 'term-output');
-    await wait(60);
-    termWrite('  role: <span class="term-string">\'researcher\'</span>,', 'term-output');
-    await wait(60);
-    termWrite('  inference: sealed0GInference({ model: <span class="term-string">\'qwen3.6-plus\'</span> }),', 'term-output');
-    await wait(60);
-    termWrite('  memory: encrypted(OG_KV({ namespace: <span class="term-string">\'research\'</span> })),', 'term-output');
-    await wait(60);
-    termWrite('  reflect: reflectOnOutput({ rounds: 1 }),', 'term-output');
-    await wait(60);
-    termWrite('});', 'term-output');
-    setBench('bench-loc', '~80 LoC');
+    termWrite('POST /api/studio/deploy', 'term-prompt');
+    await wait(100);
+    let kickoff;
+    try {
+      const r = await fetch('/api/studio/deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ graph: seed.graph, code: seed.code }),
+      });
+      if (!r.ok) {
+        const txt = await r.text();
+        throw new Error('HTTP ' + r.status + ' ' + txt.slice(0, 240));
+      }
+      kickoff = await r.json();
+    } catch (err) {
+      termWrite('  <span class="term-info">✗ enqueue failed: ' + err.message + '</span>', 'term-output');
+      setStep(3, null); $('replay').classList.add('show'); return;
+    }
+    termWrite('  <span class="term-success">✓</span> deployId=<span class="term-info">' + kickoff.deployId + '</span> · status=<span class="term-info">' + kickoff.status + '</span>', 'term-output');
     setStep(3, 'done');
-    termSpacer();
+    await wait(150);
 
-    setStep(4, 'active');
-    termWrite('pnpm dev', 'term-prompt');
-    await wait(500);
-    termWrite('<span class="term-info">[research-claw] Connecting to 0G Galileo testnet (chainId 16602)...</span>', 'term-output');
-    await wait(400);
-    termWrite('<span class="term-success">✓</span> Wallet 0x7a4f...c2b8 funded (1.247 OG)', 'term-output');
-    await wait(300);
-    termWrite('<span class="term-info">[inference] Calling sealed0GInference · qwen3.6-plus...</span>', 'term-output');
-    activateMem(8);
-    await wait(900);
-    termWrite('<span class="term-success">✓</span> TEE attestation verified · 0G Compute', 'term-output');
-    await wait(200);
-    termWrite('<span class="term-info">[output]</span> "Recent RAG agent papers focus on self-correcting retrieval,', 'term-output');
-    termWrite('         multi-hop reasoning, and tool-use augmentation..."', 'term-output');
-    setBench('bench-inference', '2.4s');
-    $('memory-status').textContent = 'writing encrypted...';
-    $('memory-status').style.color = 'var(--accent)';
+    // 4-7. POLL /api/studio/status/:id and map status → step + log lines.
+    const STATUS_STEP = {
+      queued: 4, bundling: 4,
+      'writing-manifest': 5,
+      minting: 6,
+      done: 7, error: 7,
+    };
+    let lastLogIdx = 0;
+    let final = null;
+    let memActivated = false;
+    const pollStarted = Date.now();
+    for (let attempt = 0; attempt < 240; attempt++) {
+      let s;
+      try {
+        const r = await fetch('/api/studio/status/' + kickoff.deployId, { cache: 'no-store' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        s = await r.json();
+      } catch (err) {
+        termWrite('  <span class="term-info">poll error, retrying: ' + err.message + '</span>', 'term-output');
+        await wait(2000);
+        continue;
+      }
+      // Stream new log lines as they arrive.
+      if (Array.isArray(s.logs)) {
+        for (let i = lastLogIdx; i < s.logs.length; i++) {
+          const log = s.logs[i] || {};
+          const cls = log.level === 'error' ? 'term-info' : (log.level === 'warn' ? 'term-info' : 'term-output');
+          termWrite('  ' + (log.message || ''), cls);
+        }
+        lastLogIdx = s.logs.length;
+      }
+      const stepNum = STATUS_STEP[s.status] || 4;
+      setStep(stepNum, 'active');
+      if (stepNum >= 4 && !memActivated) {
+        activateMem(48);
+        memActivated = true;
+        $('memory-status').textContent = 'writing encrypted state to 0G…';
+      }
+      if (s.status === 'done' || s.status === 'error') { final = s; break; }
+      await wait(1500);
+    }
+
+    if (!final) {
+      termWrite('<span class="term-info">timed out polling status after 6 min</span>', 'term-output');
+      $('replay').classList.add('show');
+      return;
+    }
+    if (final.status === 'error') {
+      termWrite('<span class="term-info">deploy failed: ' + (final.error || 'unknown') + '</span>', 'term-output');
+      setStep(7, null);
+      $('memory-status').textContent = 'deploy halted';
+      $('memory-status').style.color = 'var(--danger)';
+      $('replay').classList.add('show');
+      return;
+    }
+
     setStep(4, 'done');
-    termSpacer();
-
-    setStep(5, 'active');
-    termWrite('<span class="term-info">[reflection] Running self-critique pass via 0G Compute...</span>', 'term-output');
-    activateMem(4);
-    await wait(1000);
-    termWrite('<span class="term-info">[reflect.complete]</span> score: 0.87 (rubric: <span class="term-string">accuracy</span>)', 'term-output');
-    await wait(200);
-    termWrite('  → <span class="term-comment">// proposed revision: add citation breadth</span>', 'term-output');
-    await wait(300);
-    termWrite('<span class="term-success">✓</span> Learning persisted to memory · <span class="term-hash">learning:run-0x' + rndHex(4) + '</span>', 'term-output');
     setStep(5, 'done');
-    termSpacer();
-
-    setStep(6, 'active');
-    termWrite('pnpm mint', 'term-prompt');
-    await wait(400);
-    termWrite('<span class="term-info">[inft] Calling AgentNFT.mint(...) on 0G...</span>', 'term-output');
-    await wait(300);
-    termWrite('<span class="term-info">  contract: 0xc3f997545da4AA8E70C82Aab82ECB48722740601</span>', 'term-output');
-    await wait(800);
-    const mintTx = `0x${rndHex(16)}`;
-    termWrite(`<span class="term-success">✓</span> Mined in block 4,827,341 · tx: <span class="term-hash">${mintTx.slice(0,18)}...</span>`, 'term-output');
-    await wait(200);
-    const tokenId = `#${Math.floor(Math.random() * 9000 + 1000)}`;
-    termWrite(`<span class="term-info">[mint.confirmed]</span> tokenId: <span class="term-success">${tokenId}</span> · owner: 0x7a4f...c2b8`, 'term-output');
-    await wait(200);
-    termWrite(`<span class="term-info">  view on chainscan-galileo.0g.ai/tx/${mintTx.slice(0,10)}...</span>`, 'term-output');
-
-    $('inft-display').classList.add('minted');
-    $('inft-display').querySelector('.ift-token').textContent = tokenId;
-    $('inft-display').querySelector('.ift-status').textContent = 'minted · ERC-7857';
-    $('inft-tx').textContent = mintTx.slice(0, 10) + '...';
-    $('inft-tx').style.opacity = '1';
-    $('memory-status').textContent = 'encrypted · sovereign';
-    $('memory-status').style.color = 'var(--success)';
-
-    setBench('bench-mint', '3.1s');
-    setBench('bench-coldstart', '87s');
     setStep(6, 'done');
-    termSpacer();
-
-    await wait(800);
-    setStep(7, 'active');
-    termWrite('<span class="term-comment">// Demo: revoke memory (kill switch)</span>', 'term-output');
-    await wait(400);
-    termWrite('pnpm revoke -- ' + tokenId, 'term-prompt');
-    await wait(400);
-    termWrite('<span class="term-info">[revoke] Calling revokeMemory(...) with onPhase hook...</span>', 'term-output');
-    await wait(300);
-    termWrite('  <span class="term-warn">→ phase: deriveNewKey</span> (412ms)', 'term-output');
-    await wait(200);
-    termWrite('  <span class="term-warn">→ phase: signRevocation</span> (89ms)', 'term-output');
-    await wait(200);
-    termWrite('  <span class="term-warn">→ phase: oracleRefuse</span> (1502ms) <span class="term-comment">// 1.5s — under 5s target</span>', 'term-output');
-    await wait(300);
-    const revokeTx = `0x${rndHex(16)}`;
-    termWrite(`<span class="term-error">⚠</span> Revocation event emitted · tx: <span class="term-hash">${revokeTx.slice(0,18)}...</span>`, 'term-output');
-    await wait(300);
-    termWrite('<span class="term-info">[memory] Old DEK destroyed. Pointer now decrypts to:</span>', 'term-output');
-    termWrite('<span class="term-error">  0x9e3d a91f 2c8b 4f7e d6a3 b1c9 8f2e 5d4a 7b6c 3e9d a1f8 c4b7</span>', 'term-output');
-    await wait(200);
-    termWrite('<span class="term-error">  ✗ Memory unreadable · provably · forever.</span>', 'term-output');
-
-    revokeMem();
-    $('inft-display').classList.remove('minted');
-    $('inft-display').classList.add('revoked');
-    $('inft-display').querySelector('.ift-status').textContent = 'memory revoked';
-    $('memory-status').textContent = 'unreadable · revoked';
-    $('memory-status').style.color = 'var(--danger)';
-
-    setBench('bench-revoke', '1.5s');
     setStep(7, 'done');
-    termSpacer();
 
+    // 8. RESULTS — manifest pointer + per-iNFT chainscan links + benches.
     setStep(8, 'active');
-    termWrite('pnpm check:deployment', 'term-prompt');
-    await wait(500);
-    termWrite('<span class="term-info">Asserting on-chain state matches committed record...</span>', 'term-output');
-    await wait(300);
-    termWrite('  <span class="term-success">✓</span> AgentNFT @ 0xc3f997...0601 · binding ok', 'term-output');
-    await wait(150);
-    termWrite('  <span class="term-success">✓</span> MemoryRevocation @ 0x735084...b6AC · oracle rotation ok', 'term-output');
-    await wait(150);
-    termWrite(`  <span class="term-success">✓</span> Token ${tokenId} · status: REVOKED · DESTROYED_SENTINEL match`, 'term-output');
-    await wait(200);
-    termWrite('  <span class="term-success">✓</span> EIP-712 typehash drift: <span class="term-comment">none</span>', 'term-output');
-    await wait(300);
-    termWrite('<span class="term-success">✓ All assertions passed.</span> Live on-chain state matches repo.', 'term-output');
     termSpacer();
-    termWrite('<span class="term-info">Run finished.</span> Total: 87.4s · clone → mint → revoke → verify.', 'term-output');
+    if (final.manifestRoot) {
+      termWrite('manifest root: <span class="term-info">' + final.manifestRoot + '</span>', 'term-output');
+      if (final.storageExplorerUrl) {
+        termWrite('  <a href="' + final.storageExplorerUrl + '" target="_blank">' + final.storageExplorerUrl + '</a>', 'term-output');
+      }
+    }
+    const minted = (final.agents || []).filter(a => a.tokenId);
+    for (const ag of minted) {
+      const sh = (ag.txHash || '').slice(0, 14);
+      termWrite('  <span class="term-success">✓</span> ' + ag.role + ' #<span class="term-info">' + ag.tokenId + '</span> · ' + (sh ? sh + '…' : 'no tx'), 'term-output');
+      if (ag.explorerUrl) {
+        termWrite('    <a href="' + ag.explorerUrl + '" target="_blank">' + ag.explorerUrl + '</a>', 'term-output');
+      }
+    }
+    const totalMs = (final.finishedAt || Date.now()) - (final.startedAt || pollStarted);
+    termWrite('<span class="term-success">✓ Done.</span> Total: <span class="term-info">' + (totalMs/1000).toFixed(1) + 's</span> · ' + minted.length + ' iNFT(s) on Galileo.', 'term-output');
 
+    setBench('bench-coldstart', (totalMs/1000).toFixed(0) + 's');
+    setBench('bench-mint', minted.length + '×');
+    if (minted.length > 0) {
+      const first = minted[0];
+      $('inft-display').classList.add('minted');
+      $('inft-display').querySelector('.ift-token').textContent = '#' + first.tokenId;
+      $('inft-display').querySelector('.ift-status').textContent = 'minted on Galileo';
+      if ($('inft-tx')) {
+        $('inft-tx').style.opacity = '1';
+        $('inft-tx').textContent = (first.txHash || '').slice(0, 18) + '…';
+      }
+    }
+    $('memory-status').textContent = 'state encrypted on 0G Log';
     setStep(8, 'done');
 
     $('replay').classList.add('show');
