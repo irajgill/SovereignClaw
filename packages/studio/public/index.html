@@ -515,6 +515,60 @@
   .replay.show { opacity: 1; }
   .replay:hover { background: var(--accent); color: var(--navy-deep); }
 
+  /* Hero call-to-action row. */
+  .hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 28px;
+    align-items: center;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--navy-deep);
+    border-color: var(--accent);
+    box-shadow: 0 8px 32px rgba(79, 195, 247, 0.25);
+  }
+  .btn-primary:hover { transform: translateY(-1px); background: #6dd0f8; }
+  .btn-primary:disabled {
+    background: var(--navy-mid);
+    color: var(--ice-dim);
+    border-color: var(--navy-mid);
+    cursor: progress;
+    box-shadow: none;
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--ice);
+    border-color: rgba(202, 220, 252, 0.25);
+  }
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .hero-cta-meta {
+    color: var(--ice-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    margin-left: 4px;
+  }
+  .hero-cta-meta a { color: var(--accent); text-decoration: none; }
+  .hero-cta-meta a:hover { text-decoration: underline; }
+
   @media (max-width: 1100px) {
     .main-grid { grid-template-columns: 1fr; }
     .terminal { height: 460px; }
@@ -546,7 +600,16 @@
 
   <div class="hero">
     <h1>From <em>npm install</em> to a sovereign iNFT in &lt;90 seconds.</h1>
-    <p>Watch a developer clone SovereignClaw, define an agent in 10 lines, mint it as an ERC-7857 iNFT on 0G, and revoke its memory cryptographically — all in a single live session. This is what Track 1 judges install and run themselves.</p>
+    <p>Click <strong>Deploy</strong> to launch the 3-agent research swarm on 0G Galileo right now — real <code>POST /studio/deploy</code> through the production Railway oracle, real <code>AgentNFT.mint</code> txs on chainscan-galileo, real encrypted writes on 0G Storage. The terminal below is a live status feed, not a recording.</p>
+    <div class="hero-cta">
+      <button class="btn btn-primary" id="deploy-btn" type="button">▶ Deploy 3-agent mesh on 0G</button>
+      <a class="btn btn-secondary" href="/builder">Open visual builder →</a>
+      <a class="btn btn-secondary" href="https://github.com/lalla-ai/SovereignClaw" target="_blank" rel="noopener">GitHub</a>
+      <span class="hero-cta-meta">
+        AgentNFT <a href="https://chainscan-galileo.0g.ai/address/0xc3f997545da4AA8E70C82Aab82ECB48722740601" target="_blank">0xc3f9…0601</a>
+        · npm <a href="https://www.npmjs.com/org/sovereignclaw" target="_blank">@sovereignclaw/*</a>
+      </span>
+    </div>
   </div>
 
   <div class="main-grid">
@@ -942,9 +1005,34 @@
     $('replay').classList.add('show');
   }
 
-  $('replay').addEventListener('click', runDemo);
+  // Wire the hero primary button + the floating REPLAY button.
+  // Both call runDemo, but we lock the primary while a run is in flight
+  // so a double-click can't enqueue two deploys against the same wallet
+  // (which would race nonces on the storage flow).
+  const deployBtn = $('deploy-btn');
+  let deployInFlight = false;
+  async function triggerRun() {
+    if (deployInFlight) return;
+    deployInFlight = true;
+    deployBtn.disabled = true;
+    deployBtn.textContent = '… deploying';
+    try {
+      await runDemo();
+    } finally {
+      deployInFlight = false;
+      deployBtn.disabled = false;
+      deployBtn.textContent = '▶ Deploy again';
+    }
+  }
+  deployBtn.addEventListener('click', triggerRun);
+  $('replay').addEventListener('click', triggerRun);
 
-  setTimeout(runDemo, 1500);
+  // Idle terminal copy on first paint — no auto-run.
+  term.innerHTML =
+    '<div class="term-line term-info">// SovereignClaw — ready.</div>' +
+    '<div class="term-line term-output">Click <span class="term-success">▶ Deploy 3-agent mesh on 0G</span> above to start a live deploy.</div>' +
+    '<div class="term-line term-output">A real POST /studio/deploy hits the Railway dev oracle, mints 3 iNFTs on chainscan-galileo, and writes encrypted state on 0G Storage. ~60–90s end-to-end.</div>' +
+    '<div class="term-line term-comment">// Tip: open /builder to drag-and-drop your own graph.</div>';
 </script>
 
 </body>
