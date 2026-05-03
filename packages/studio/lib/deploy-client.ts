@@ -49,6 +49,26 @@ function resolveBackendUrl(): string {
 }
 
 /**
+ * Optional bearer token. The browser deploy flow doesn't need one —
+ * Studio routes are gated server-side by EIP-712 wallet signatures
+ * (STUDIO_SIGNER_ALLOWLIST). But if an operator wants to test against a
+ * fully bearer-locked backend, they can pass `?bearer=...` once and we
+ * cache it in localStorage. We deliberately don't read this from
+ * NEXT_PUBLIC_* env vars (they're embedded in the bundle and would
+ * defeat the auth gate).
+ */
+function resolveBearerToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  const qp = params.get('bearer');
+  if (qp) {
+    window.localStorage.setItem('studio:bearer', qp);
+    return qp;
+  }
+  return window.localStorage.getItem('studio:bearer');
+}
+
+/**
  * POST /studio/deploy.
  *
  * Third argument (Phase 9): optional signed claim. When the backend has
@@ -62,9 +82,12 @@ export async function postDeploy(
   clientSig?: SignedStudioDeployClaim,
 ): Promise<DeployKickoff> {
   const url = resolveBackendUrl();
+  const bearer = resolveBearerToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (bearer) headers.Authorization = `Bearer ${bearer}`;
   const res = await fetch(`${url}/studio/deploy`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(clientSig ? { graph, code, clientSig } : { graph, code }),
   });
   if (!res.ok) {
@@ -76,7 +99,10 @@ export async function postDeploy(
 }
 
 export async function fetchStatus(backendUrl: string, deployId: string): Promise<DeployStatus> {
-  const res = await fetch(`${backendUrl}/studio/status/${deployId}`);
+  const bearer = resolveBearerToken();
+  const headers: Record<string, string> = {};
+  if (bearer) headers.Authorization = `Bearer ${bearer}`;
+  const res = await fetch(`${backendUrl}/studio/status/${deployId}`, { headers });
   if (!res.ok) {
     throw new Error(`status fetch failed: ${res.status}`);
   }

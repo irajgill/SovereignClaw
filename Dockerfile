@@ -42,9 +42,9 @@ COPY packages/inft/package.json        packages/inft/
 COPY packages/reflection/package.json  packages/reflection/
 COPY packages/studio/package.json      packages/studio/
 COPY apps/backend/package.json         apps/backend/
+COPY apps/docs/package.json            apps/docs/
 COPY examples/agent-hello/package.json                       examples/agent-hello/
 COPY examples/agent-mint-transfer-revoke/package.json        examples/agent-mint-transfer-revoke/
-COPY examples/research-claw/package.json                     examples/research-claw/
 COPY examples/research-mesh/package.json                     examples/research-mesh/
 
 # `pnpm install` resolves $NPM_TOKEN from .npmrc; an empty value keeps
