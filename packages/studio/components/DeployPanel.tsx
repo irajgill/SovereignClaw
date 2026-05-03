@@ -7,8 +7,40 @@ import { validateGraph } from '../lib/validator';
 import { fetchStatus, postDeploy, type DeployStatus } from '../lib/deploy-client';
 import { connect, signDeploy } from '../lib/wallet';
 
+type Phase = 'idle' | 'signing' | 'posting' | 'polling' | 'done' | 'error';
+
+const PHASE_ICONS: Record<Phase, string> = {
+  idle: '🚀',
+  signing: '✍️',
+  posting: '📡',
+  polling: '⚙️',
+  done: '✅',
+  error: '❌',
+};
+
+const PHASE_LABELS: Record<Phase, string> = {
+  idle: 'Ready to deploy',
+  signing: 'Awaiting wallet signature…',
+  posting: 'Sending to backend…',
+  polling: 'Deploying on 0G…',
+  done: 'Deploy complete',
+  error: 'Deploy failed',
+};
+
+const AGENT_ICONS: Record<string, string> = {
+  planner: '🗺️',
+  executor: '⚡',
+  critic: '🔬',
+  brain: '🧠',
+  strategist: '📊',
+  opener: '📨',
+  closer: '🤝',
+  operator: '🔧',
+};
+
 export function DeployPanel(): JSX.Element {
   const { nodes, edges, wallet } = useStudioStore();
+
   const graph = useMemo(
     () => ({
       version: 1 as const,
@@ -31,7 +63,7 @@ export function DeployPanel(): JSX.Element {
   const validation = useMemo(() => validateGraph(graph), [graph]);
   const agentCount = useMemo(() => nodes.filter((n) => n.data.kind === 'agent').length, [nodes]);
 
-  const [deploying, setDeploying] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
   const [status, setStatus] = useState<DeployStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [backendUrl, setBackendUrl] = useState<string | null>(null);
@@ -39,138 +71,210 @@ export function DeployPanel(): JSX.Element {
 
   useEffect(() => () => stopPolling(), []);
 
-  function stopPolling(): void {
+  function stopPolling() {
     if (pollTimer.current) {
       clearInterval(pollTimer.current);
       pollTimer.current = null;
     }
   }
 
-  async function deploy(): Promise<void> {
+  async function deploy() {
     setError(null);
     setStatus(null);
-    setDeploying(true);
     stopPolling();
     try {
       const { source } = generateCode(graph);
-      // If a wallet is connected, sign the deploy claim (EIP-712 over
-      // {graphSha, nonce, timestamp}). The backend only REQUIRES this
-      // when STUDIO_SIGNER_ALLOWLIST is set, but sending it when we
-      // have it lets the backend audit-log the signer even in open
-      // mode — useful for multi-user dev deployments.
       let clientSig;
       if (wallet) {
-        // Reconnect to get a live BrowserProvider (we don't persist
-        // it in the store). This is a no-op dialog when already
-        // authorized and keeps us robust to page refreshes.
+        setPhase('signing');
         const live = await connect();
-        const signed = await signDeploy(live, graph);
-        clientSig = signed;
+        clientSig = await signDeploy(live, graph);
       }
+      setPhase('posting');
       const kickoff = await postDeploy(graph, source, clientSig);
       setBackendUrl(kickoff.backendUrl);
+      setPhase('polling');
+
       pollTimer.current = setInterval(async () => {
         try {
           const s = await fetchStatus(kickoff.backendUrl, kickoff.deployId);
           setStatus(s);
           if (s.status === 'done' || s.status === 'error') {
             stopPolling();
-            setDeploying(false);
+            setPhase(s.status === 'done' ? 'done' : 'error');
+            if (s.status === 'error' && s.error) setError(s.error);
           }
         } catch (err) {
           stopPolling();
-          setDeploying(false);
+          setPhase('error');
           setError((err as Error).message);
         }
       }, 1500);
     } catch (err) {
-      setDeploying(false);
+      setPhase('error');
       setError((err as Error).message);
     }
   }
 
-  const canDeploy = validation.ok && agentCount > 0 && !deploying;
+  const isDeploying = phase === 'signing' || phase === 'posting' || phase === 'polling';
+  const canDeploy = validation.ok && agentCount > 0 && !isDeploying;
+  const errorCount = validation.issues.filter((i) => i.severity === 'error').length;
 
   return (
     <div className="deploy-panel">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontWeight: 600 }}>Deploy</div>
-        <div style={{ fontSize: 11, color: 'var(--muted)' }}>
-          {agentCount} agent{agentCount === 1 ? '' : 's'} ·{' '}
-          <span className={validation.ok ? 'pill' : 'pill warn'}>
-            {validation.ok
-              ? 'valid'
-              : `${validation.issues.filter((i) => i.severity === 'error').length} errors`}
+      {/* Top row */}
+      <div className="deploy-top">
+        <div className="deploy-icon">
+          {isDeploying ? (
+            <span className="spin" style={{ fontSize: 14 }}>
+              ⚙️
+            </span>
+          ) : (
+            PHASE_ICONS[phase]
+          )}
+        </div>
+        <div className="deploy-heading">Deploy</div>
+        <div className="deploy-chips">
+          <span className="pill neutral" style={{ fontFamily: 'var(--font-mono)', fontSize: 9 }}>
+            🤖 {agentCount}
           </span>
+          {validation.ok ? (
+            <span className="pill ok">✓ valid</span>
+          ) : (
+            <span className="pill warn">⚠ {errorCount} err</span>
+          )}
         </div>
       </div>
-      <button className="btn primary" disabled={!canDeploy} onClick={deploy}>
-        {deploying ? 'Deploying…' : `Deploy ${agentCount} iNFT${agentCount === 1 ? '' : 's'}`}
+
+      {/* Phase status line */}
+      {isDeploying && (
+        <div className="deploy-phase-line">
+          <span className="status-dot active" />
+          {PHASE_LABELS[phase]}
+          {status?.status && phase === 'polling' && ` · ${status.status.replace('-', ' ')}`}
+        </div>
+      )}
+
+      {/* Done state */}
+      {phase === 'done' && (
+        <div
+          className="deploy-phase-line"
+          style={{
+            background: 'rgba(0,255,136,0.06)',
+            borderColor: 'rgba(0,255,136,0.18)',
+            color: 'var(--green)',
+          }}
+        >
+          <span className="status-dot done" />
+          Deploy complete — {agentCount} iNFT{agentCount !== 1 ? 's' : ''} minted on 0G
+        </div>
+      )}
+
+      {/* Error state */}
+      {phase === 'error' && error && (
+        <div className="issue error" style={{ fontSize: 10 }}>
+          <span className="issue-icon">❌</span>
+          <div>
+            <div className="issue-text">{error}</div>
+          </div>
+        </div>
+      )}
+
+      {/* CTA button */}
+      <button
+        className="btn primary"
+        disabled={!canDeploy}
+        onClick={deploy}
+        style={{ justifyContent: 'center', padding: '9px 16px', fontSize: 12.5 }}
+      >
+        {isDeploying ? (
+          <>
+            <span className="spin">⚙</span> {PHASE_LABELS[phase]}
+          </>
+        ) : phase === 'done' ? (
+          <>✓ Deploy again</>
+        ) : (
+          <>
+            🚀 Deploy {agentCount} iNFT{agentCount !== 1 ? 's' : ''} to 0G
+          </>
+        )}
       </button>
-      {error && <div className="issue error">deploy error: {error}</div>}
+
+      {/* Agent cards during/after deploy */}
+      {status && status.agents.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {status.agents.map((a) => {
+            const isMinted = Boolean(a.tokenId);
+            return (
+              <div key={a.nodeId} className={`deploy-agent-row${isMinted ? ' minted' : ''}`}>
+                <span className="dar-icon">{AGENT_ICONS[a.role] ?? '🤖'}</span>
+                <span className="dar-role">{a.role}</span>
+                <span className={`dar-status ${isMinted ? 'done' : 'pending'}`}>
+                  {isMinted ? (
+                    a.explorerUrl ? (
+                      <a href={a.explorerUrl} target="_blank" rel="noreferrer">
+                        #{a.tokenId} ↗
+                      </a>
+                    ) : (
+                      `#${a.tokenId}`
+                    )
+                  ) : (
+                    <span className="pulse">minting…</span>
+                  )}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Deploy details */}
       {status && (
-        <div className="deploy-status">
-          <div className="row">
-            <span>deployId</span>
-            <span>{status.deployId}</span>
-          </div>
-          <div className="row">
-            <span>status</span>
-            <span>{status.status}</span>
-          </div>
+        <div className="deploy-status-grid">
           {status.manifestRoot && (
-            <div className="row">
-              <span>manifest</span>
-              <span>
+            <div className="ds-row">
+              <span className="ds-key">manifest</span>
+              <span className="ds-val">
                 {status.storageExplorerUrl ? (
                   <a href={status.storageExplorerUrl} target="_blank" rel="noreferrer">
-                    {status.manifestRoot.slice(0, 10)}…
+                    {status.manifestRoot.slice(0, 14)}… ↗
                   </a>
                 ) : (
-                  <>{status.manifestRoot.slice(0, 10)}…</>
+                  `${status.manifestRoot.slice(0, 14)}…`
                 )}
               </span>
             </div>
           )}
-          {status.agents.length > 0 && (
+          {backendUrl && (
+            <div className="ds-row">
+              <span className="ds-key">backend</span>
+              <span className="ds-val">
+                <a href={`${backendUrl}/healthz`} target="_blank" rel="noreferrer">
+                  {backendUrl} ↗
+                </a>
+              </span>
+            </div>
+          )}
+
+          {/* Log stream */}
+          {status.logs.length > 0 && (
             <>
-              <hr style={{ border: '1px solid var(--border)', margin: '6px 0' }} />
-              {status.agents.map((a) => (
-                <div key={a.nodeId} className="row">
-                  <span>{a.role}</span>
-                  <span>
-                    {a.explorerUrl ? (
-                      <a href={a.explorerUrl} target="_blank" rel="noreferrer">
-                        iNFT #{a.tokenId}
-                      </a>
-                    ) : (
-                      <>pending…</>
-                    )}
+              <div className="ds-sep" />
+              {status.logs.slice(-5).map((l, i) => (
+                <div key={i} className="ds-row" style={{ gap: 6 }}>
+                  <span className="ds-key" style={{ fontSize: 9.5, color: 'var(--ink-5)' }}>
+                    {new Date(l.at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                    })}
+                  </span>
+                  <span className="ds-val" style={{ color: 'var(--ink-3)', fontSize: 10 }}>
+                    {l.message}
                   </span>
                 </div>
               ))}
             </>
-          )}
-          {status.logs.length > 0 && (
-            <>
-              <hr style={{ border: '1px solid var(--border)', margin: '6px 0' }} />
-              {status.logs.slice(-8).map((l, i) => (
-                <div key={i} className="row">
-                  <span>{new Date(l.at).toLocaleTimeString()}</span>
-                  <span>{l.message}</span>
-                </div>
-              ))}
-            </>
-          )}
-          {backendUrl && (
-            <div className="row" style={{ marginTop: 4 }}>
-              <span>backend</span>
-              <span>
-                <a href={`${backendUrl}/healthz`} target="_blank" rel="noreferrer">
-                  {backendUrl}
-                </a>
-              </span>
-            </div>
           )}
         </div>
       )}
