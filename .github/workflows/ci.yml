@@ -25,6 +25,17 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # @sovereignclaw/inft imports Foundry JSON from contracts/out/*. A
+      # clean checkout has no out/ — typecheck and tsup both need the ABIs.
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Build Solidity (forge out/ for inft ABIs)
+        working-directory: contracts
+        run: |
+          forge install foundry-rs/forge-std --no-git
+          forge install OpenZeppelin/openzeppelin-contracts@v5.1.0 --no-git
+          forge build --sizes
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
