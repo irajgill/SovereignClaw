@@ -28,34 +28,51 @@ export function buildApp(deps: ReturnType<typeof buildDeps>) {
   const app = new Hono();
   const { config, key, store, studioStore } = deps;
 
-  // CORS for the browser Studio (Next.js dev server).
+  // CORS for the browser Studio. The env var is comma-separated origins,
+  // OR a single literal '*' meaning "allow any origin." We never reply
+  // with the literal '*' for credentialed requests; instead, we always
+  // echo the browser's Origin header back. That keeps `*` permissive
+  // while still working with future credentialed (cookie-bearing)
+  // requests if we ever add them.
   const corsOriginsRaw =
     config.STUDIO_CORS_ORIGINS ?? 'http://localhost:3030,http://127.0.0.1:3030';
-  const allowList = new Set(
-    corsOriginsRaw
-      .split(',')
-      .map((o) => o.trim())
-      .filter(Boolean),
-  );
+  const corsOrigins = corsOriginsRaw
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  const corsAllowAny = corsOrigins.includes('*');
+  const corsAllowList = new Set(corsOrigins.filter((o) => o !== '*'));
   app.use('*', async (c, next) => {
     const origin = c.req.header('Origin');
-    if (origin && allowList.has(origin)) {
-      c.header('Access-Control-Allow-Origin', origin);
+    const allowed = origin && (corsAllowAny || corsAllowList.has(origin));
+    if (allowed) {
+      c.header('Access-Control-Allow-Origin', origin!);
       c.header('Vary', 'Origin');
       c.header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
       c.header(
         'Access-Control-Allow-Headers',
         c.req.header('Access-Control-Request-Headers') ?? 'Content-Type,Authorization',
       );
+      c.header('Access-Control-Max-Age', '600');
     }
     if (c.req.method === 'OPTIONS') return c.body(null, 204);
     return next();
   });
 
-  // Optional bearer token gate. Applies to ALL routes; /healthz still
-  // requires the token if one is set.
+  // Bearer token gate for `/oracle/*` and `/healthz`. Studio routes are
+  // gated separately via EIP-712 wallet signatures (STUDIO_SIGNER_ALLOWLIST)
+  // — putting `/studio/*` behind bearer auth would force every browser
+  // client to ship a shared secret, which defeats the purpose. The
+  // distinction:
+  //
+  //   /oracle/*   → bearer (server-to-server / privileged)
+  //   /studio/*   → wallet sig in body (browser, open-mode in dev)
+  //   /healthz    → bearer if set (operators/monitoring; UIs don't read it)
   app.use('*', async (c, next) => {
     if (!config.ORACLE_AUTH_TOKEN) return next();
+    const path = c.req.path;
+    // Studio routes intentionally bypass bearer — see STUDIO_SIGNER_ALLOWLIST.
+    if (path.startsWith('/studio/')) return next();
     const auth = c.req.header('Authorization');
     if (auth !== `Bearer ${config.ORACLE_AUTH_TOKEN}`) {
       return c.json({ error: 'unauthorized' }, 401);
