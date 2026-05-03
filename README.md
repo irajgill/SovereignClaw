@@ -75,11 +75,12 @@ backend on Railway. The graph generated for ResearchClaw produces source
 byte-equivalent to the example file (snapshot-tested in
 `packages/studio/test/codegen.test.ts`).
 
-**IncomeClaw — the 5-agent reference build** is the production consumer of
-this framework. Track 2 submission, separate repo. Pinned versions:
-`@sovereignclaw/core@0.2.0`, `@sovereignclaw/mesh@0.2.0`,
-`@sovereignclaw/inft@0.1.0`, `@sovereignclaw/memory@0.1.0`,
-`@sovereignclaw/reflection@0.1.1`.
+**IncomeClaw — the 5-agent reference build** at
+[github.com/irajgill/IncomeClaw](https://github.com/irajgill/IncomeClaw).
+Track 2 submission, separate repo, consumes only the public API of these
+five packages. Pinned versions: `@sovereignclaw/core@0.2.0`,
+`@sovereignclaw/mesh@0.2.0`, `@sovereignclaw/inft@0.1.0`,
+`@sovereignclaw/memory@0.1.0`, `@sovereignclaw/reflection@0.1.1`.
 
 ## Deployed addresses (0G Galileo Testnet, chainId `16602`)
 
