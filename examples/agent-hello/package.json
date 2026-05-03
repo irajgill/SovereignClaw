@@ -1,6 +1,6 @@
 {
   "name": "agent-hello",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Phase 1 DoD example - runs an Agent against real 0G testnet, writes encrypted state to 0G Log.",
   "license": "Apache-2.0",

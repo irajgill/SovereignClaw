@@ -1,6 +1,6 @@
 {
   "name": "@sovereignclaw/memory",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Sovereign memory primitives for SovereignClaw - encrypted, revocable, 0G-backed.",
   "license": "Apache-2.0",
   "type": "module",
@@ -18,6 +18,26 @@
     "dist",
     "README.md"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amsorrytola/SovereignClaw.git",
+    "directory": "packages/memory"
+  },
+  "homepage": "https://github.com/amsorrytola/SovereignClaw/tree/main/packages/memory",
+  "bugs": {
+    "url": "https://github.com/amsorrytola/SovereignClaw/issues"
+  },
+  "keywords": [
+    "0g",
+    "0g-storage",
+    "encrypted-memory",
+    "aes-gcm",
+    "sovereign",
+    "ai-memory"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",

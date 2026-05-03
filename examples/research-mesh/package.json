@@ -1,6 +1,6 @@
 {
   "name": "@sovereignclaw/example-research-mesh",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Phase 5 DoD example — three-agent planner/executor/critic mesh over a 0G Log bus.",
   "license": "Apache-2.0",

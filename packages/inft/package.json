@@ -1,6 +1,6 @@
 {
   "name": "@sovereignclaw/inft",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "ERC-7857 iNFT lifecycle helpers for SovereignClaw - mint, transfer with re-encryption, revoke, royalty events.",
   "license": "Apache-2.0",
   "type": "module",
@@ -18,6 +18,26 @@
     "dist",
     "README.md"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amsorrytola/SovereignClaw.git",
+    "directory": "packages/inft"
+  },
+  "homepage": "https://github.com/amsorrytola/SovereignClaw/tree/main/packages/inft",
+  "bugs": {
+    "url": "https://github.com/amsorrytola/SovereignClaw/issues"
+  },
+  "keywords": [
+    "0g",
+    "inft",
+    "erc-7857",
+    "agent-nft",
+    "tee-oracle",
+    "memory-revocation"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",

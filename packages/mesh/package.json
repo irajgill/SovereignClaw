@@ -1,6 +1,6 @@
 {
   "name": "@sovereignclaw/mesh",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Multi-agent coordination for SovereignClaw — bus on 0G Log, patterns, replay.",
   "license": "Apache-2.0",
   "type": "module",
@@ -18,6 +18,25 @@
     "dist",
     "README.md"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amsorrytola/SovereignClaw.git",
+    "directory": "packages/mesh"
+  },
+  "homepage": "https://github.com/amsorrytola/SovereignClaw/tree/main/packages/mesh",
+  "bugs": {
+    "url": "https://github.com/amsorrytola/SovereignClaw/issues"
+  },
+  "keywords": [
+    "0g",
+    "agent-mesh",
+    "multi-agent",
+    "swarm",
+    "plan-execute-critique"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
