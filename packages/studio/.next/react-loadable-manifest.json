@@ -1,8 +1,8 @@
 {
   "components/CodePreview.tsx -> @monaco-editor/react": {
-    "id": 6920,
+    "id": "components/CodePreview.tsx -> @monaco-editor/react",
     "files": [
-      "static/chunks/920.ac9501103e36615f.js"
+      "static/chunks/_app-pages-browser_node_modules_pnpm_monaco-editor_react_4_6_0_monaco-editor_0_55_1_react-dom-d5ca6a.js"
     ]
   }
 }
